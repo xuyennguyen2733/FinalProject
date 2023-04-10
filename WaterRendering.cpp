@@ -30,6 +30,7 @@ cy::Vec3f camTar = cy::Vec3f(0.0f, 0.0f, 0.0f);
 
 // Programs
 cy::GLSLProgram tankProg;
+cy::GLSLProgram waterProg;
 
 // Matrices
 cy::Matrix4f tankViewMatrix;
@@ -38,12 +39,20 @@ cy::Matrix4f tankModelMatrix;
 cy::Matrix4f tankMvp;
 cy::Matrix4f tankMv;
 cy::Matrix3f tankMn;
+cy::Matrix4f waterViewMatrix;
+cy::Matrix4f waterProjMatrix;
+cy::Matrix4f waterModelMatrix;
+cy::Matrix4f waterMvp;
+cy::Matrix4f waterMv;
+cy::Matrix3f waterMn;
 
 // Buffers
 GLuint tankFaceBuffer;
+GLuint waterFaceBuffer;
 
 // Vertex Array Objects
-GLuint vao;
+GLuint tankVertexArrayObject;
+GLuint waterVertexArrayObject;
 
 // Texture IDs
 
@@ -63,6 +72,7 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
 static void SetUpWaterSurface(float width, float length, float height);
 static void SetUpCamera();
 static void DrawTank();
+static void DrawWater();
 static void InitPrograms();
 
 
@@ -72,6 +82,7 @@ void display() {
     glEnable(GL_DEPTH_TEST);
 
     DrawTank();
+    DrawWater();
 
     // Swap buffers
         /**
@@ -86,8 +97,15 @@ void display() {
 static void DrawTank() {
     glUseProgram(tankProg.GetID());
     tankProg.Bind();
-    glBindVertexArray(vao);
+    glBindVertexArray(tankVertexArrayObject);
     glDrawArrays(GL_TRIANGLES, 0, tank.size());
+}
+
+static void DrawWater() {
+    glUseProgram(waterProg.GetID());
+    waterProg.Bind();
+    glBindVertexArray(waterVertexArrayObject);
+    glDrawArrays(GL_TRIANGLES, 0, waterSurface.size());
 }
 
 void keypress(unsigned char key, int x, int y) {
@@ -169,6 +187,11 @@ void drag(int x, int y) {
     tankProg["mvp"] = tankMvp;
     tankProg["MV"] = tankMv;
     tankProg["MN"] = tankMn;
+
+    glUseProgram(waterProg.GetID());
+    waterProg["mvp"] = waterMvp;
+    waterProg["MV"] = waterMv;
+    waterProg["MN"] = waterMn;
     oldX = x;
     oldY = y;
 }
@@ -227,12 +250,12 @@ int main(int argc, char** argv) {
     glClearColor(0, 0, 0, 0);
 
     // OpenGL Initializations
-    width = 10.0f;
-    length = 20.0f;
+    width = 20.0f;
+    length = 30.0f;
     height = 10.0f;
     thickness = 1.0f;
     SetUpWaterTank(width, length, height, thickness);
-    SetUpWaterSurface(width-thickness*2,length-thickness*2,height);
+    SetUpWaterSurface(width-thickness*2,length-thickness*2,height-2.0f);
     SetUpCamera();
     InitPrograms();
 
@@ -403,15 +426,19 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
 }
 
 static void SetUpWaterSurface(float width, float length, float height) {
-    //tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left 
-    //tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom right
-    //tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
-    //tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
-    //tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top left
-    //tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
+    float wCoord = width / 2;
+    float lCoord = length / 2;
+    float hCoord = height;
+    waterSurface.push_back(cy::Vec3f(-lCoord, hCoord, wCoord)); // bottom left 
+    waterSurface.push_back(cy::Vec3f(lCoord, hCoord, wCoord)); // bottom right
+    waterSurface.push_back(cy::Vec3f(lCoord, hCoord, -wCoord)); // top right
+    waterSurface.push_back(cy::Vec3f(lCoord, hCoord, -wCoord)); // top right
+    waterSurface.push_back(cy::Vec3f(-lCoord, hCoord, -wCoord)); // top left
+    waterSurface.push_back(cy::Vec3f(-lCoord, hCoord, wCoord)); // bottom left
 }
 
 static void SetUpCamera() {
+    // water tank
     tankViewMatrix = cy::Matrix4f::View(camPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
     tankProjMatrix = cy::Matrix4f::Perspective(D2R(60.0f), viewWidth / viewHeight, 0.1f, 1000.0f);
     tankModelMatrix = cy::Matrix4f::RotationZ(D2R(0.0f));
@@ -420,17 +447,28 @@ static void SetUpCamera() {
     tankMn = tankMv.GetSubMatrix3();
     tankMn.Invert();
     tankMn.Transpose();
+
+    // water surface
+    waterViewMatrix = cy::Matrix4f::View(camPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
+    waterProjMatrix = cy::Matrix4f::Perspective(D2R(60.0f), viewWidth / viewHeight, 0.1f, 1000.0f);
+    waterModelMatrix = cy::Matrix4f::RotationZ(D2R(0.0f));
+    waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+    waterMv = waterViewMatrix * waterModelMatrix;
+    waterMn = waterMv.GetSubMatrix3();
+    waterMn.Invert();
+    waterMn.Transpose();
 }
 
 static void InitPrograms() {
+    // water tank
     tankProg.BuildFiles("tank_vert.txt", "tank_frag.txt");
     tankProg.Bind();
     tankProg["mvp"] = tankMvp;
     tankProg["mv"] = tankMv;
     tankProg["mn"] = tankMn;
 
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    glGenVertexArrays(1, &tankVertexArrayObject);
+    glBindVertexArray(tankVertexArrayObject);
 
     glGenBuffers(1, &tankFaceBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, tankFaceBuffer);
@@ -442,4 +480,25 @@ static void InitPrograms() {
     glBindBuffer(GL_ARRAY_BUFFER, tankFaceBuffer);
 
     tankProg.SetAttribBuffer("pos", tankFaceBuffer, 3);
+
+    // water surface
+    waterProg.BuildFiles("water_vert.txt", "water_frag.txt");
+    waterProg.Bind();
+    waterProg["mvp"] = waterMvp;
+    waterProg["mv"] = waterMv;
+    waterProg["mn"] = waterMn;
+
+    glGenVertexArrays(1, &waterVertexArrayObject);
+    glBindVertexArray(waterVertexArrayObject);
+
+    glGenBuffers(1, &waterFaceBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, waterFaceBuffer);
+    glBufferData(GL_ARRAY_BUFFER,
+        waterSurface.size() * sizeof(cy::Vec3f),
+        &waterSurface[0],
+        GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, waterFaceBuffer);
+
+    waterProg.SetAttribBuffer("pos", waterFaceBuffer, 3);
 }
