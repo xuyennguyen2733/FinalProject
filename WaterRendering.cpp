@@ -1,15 +1,15 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <cyMatrix.h>
-#include <cyVector.h>
-#include <cyTriMesh.h>
-#include <cyGL.h>
+#include <cycodebase/cyMatrix.h>
+#include <cycodebase/cyVector.h>
+#include <cycodebase/cyTriMesh.h>
+#include <cycodebase/cyGL.h>
 #include <stdio.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <vector>
-#include <lodepng.h>
-#include <lodepng.cpp>
+#include <lodepng/lodepng.h>
+#include <lodepng/lodepng.cpp>
 
 float viewHeight = 540;
 float viewWidth = 960;
@@ -181,6 +181,11 @@ void hover(int x, int y) {
 void reshape(int x, int y) {
     // Do what you want
     // when window size changes
+    viewHeight = y;
+    viewWidth = x;
+    centerX = viewWidth / 2;
+    centerY = viewHeight / 2;
+    glViewport(1, 1, viewWidth, viewHeight);
 }
 
 void idle() {
