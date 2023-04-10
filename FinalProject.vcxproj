@@ -79,12 +79,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>C:\Users\xuyen\src\vcpkg\packages\freeglut_x64-windows\include;C:\Users\xuyen\src\lodepng;C:\Users\xuyen\src\glew-2.1.0\glew-2.1.0\include;C:\Users\xuyen\src\cyCodeBase;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\xuyen\src\vcpkg\packages\freeglut_x64-windows\lib;C:\Users\xuyen\src\glew-2.1.0\glew-2.1.0\lib;C:\Users\xuyen\src\vcpkg\packages\freeglut_x64-windows\debug\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\xuyen\source\repos\FinalProject\FinalProject\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>C:\Users\xuyen\src\vcpkg\packages\freeglut_x64-windows\include;C:\Users\xuyen\src\lodepng;C:\Users\xuyen\src\glew-2.1.0\glew-2.1.0\include;C:\Users\xuyen\src\cyCodeBase;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\xuyen\src\vcpkg\packages\freeglut_x64-windows\lib;C:\Users\xuyen\src\glew-2.1.0\glew-2.1.0\lib;C:\Users\xuyen\src\vcpkg\packages\freeglut_x64-windows\debug\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>C:\Users\xuyen\source\repos\FinalProject\FinalProject\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
