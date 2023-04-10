@@ -1,9 +1,9 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
-#include <cycodebase/cyMatrix.h>
-#include <cycodebase/cyVector.h>
-#include <cycodebase/cyTriMesh.h>
-#include <cycodebase/cyGL.h>
+#include <cyCodebase/cyMatrix.h>
+#include <cyCodebase/cyVector.h>
+#include <cyCodebase/cyTriMesh.h>
+#include <cyCodebase/cyGL.h>
 #include <stdio.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
