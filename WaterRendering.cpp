@@ -16,6 +16,13 @@ float viewWidth = 960;
 
 // Meshes
 std::vector<cy::Vec3f> tank;
+std::vector<cy::Vec3f> waterSurface;
+
+// Mesh attributes
+float height;
+float width;
+float length;
+float thickness;
 
 // Camera
 cy::Vec3f camPos = cy::Vec3f(0.0f, 20.0f, 30.0f);
@@ -52,7 +59,8 @@ int main(int argc, char** argv);
 
 static double D2R(int degrees);
 static cy::Vec3f Mat3Vec3Mul(cy::Matrix3f m, cy::Vec3f v);
-static void SetUpWaterTank(float width, float length, float height);
+static void SetUpWaterTank(float width, float length, float height, float thickness);
+static void SetUpWaterSurface(float width, float length, float height);
 static void SetUpCamera();
 static void DrawTank();
 static void InitPrograms();
@@ -214,7 +222,12 @@ int main(int argc, char** argv) {
     glClearColor(0, 0, 0, 0);
 
     // OpenGL Initializations
-    SetUpWaterTank(10.0f, 20.0f, 10.0f);
+    width = 10.0f;
+    length = 20.0f;
+    height = 10.0f;
+    thickness = 1.0f;
+    SetUpWaterTank(width, length, height, thickness);
+    SetUpWaterSurface(width-thickness*2,length-thickness*2,height);
     SetUpCamera();
     InitPrograms();
 
@@ -241,66 +254,156 @@ static cy::Vec3f Mat3Vec3Mul(cy::Matrix3f m, cy::Vec3f v) {
     return result;
 }
 
-static void SetUpWaterTank(float width, float length, float height) {
+static void SetUpWaterTank(float width, float length, float height, float thickness) {
     // length along the X axis
     // height along the Y axis
     // width along the Z axis
-    float wCoord = width / 2;
-    float lCoord = length / 2;
-    float hCoord = height;
+    
+    // Outer walls:
+
+    float wCoordOuter = width / 2;
+    float lCoordOuter = length / 2;
+    float hCoordOuter = height;
     
     // bottom - XZ-plane
     // coord format: (+-length/2,0,+-width/2)
     
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, -wCoord)); // bottom left
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, -wCoord)); // bottom right
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, wCoord)); // top right
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, wCoord)); // top right
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, wCoord)); // top left
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, -wCoord)); // bottom left
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // top left
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left
 
     // front - XY-plane
     // coord format: (+-length/2,height or 0,width/2)
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, wCoord)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, wCoord)); // bottom right
-    tank.push_back(cy::Vec3f(lCoord, hCoord, wCoord)); // top right
-    tank.push_back(cy::Vec3f(lCoord, hCoord, wCoord)); // top right
-    tank.push_back(cy::Vec3f(-lCoord, hCoord, wCoord)); // top left
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, wCoord)); // bottom left 
-
-
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // top left
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // bottom left 
 
     // back - XY-plane
     // coord format: (+-length/2,height or 0,-width/2)
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, -wCoord)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, -wCoord)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoord, hCoord, -wCoord)); // top right
-    tank.push_back(cy::Vec3f(-lCoord, hCoord, -wCoord)); // top right
-    tank.push_back(cy::Vec3f(lCoord, hCoord, -wCoord)); // top left
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, -wCoord)); // bottom left 
-
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top left
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
 
     // left - YZ-plane
     // coord format: (-length/2,height or 0,+-width/2)
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, -wCoord)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, wCoord)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoord, hCoord, wCoord)); // top right
-    tank.push_back(cy::Vec3f(-lCoord, hCoord, wCoord)); // top right
-    tank.push_back(cy::Vec3f(-lCoord, hCoord, -wCoord)); // top left
-    tank.push_back(cy::Vec3f(-lCoord, 0.0f, -wCoord)); // bottom left 
-    
-    
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top left
+    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
 
     // right - YZ-plane
     // coord format: (length/2,height or 0,+-width/2)
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, wCoord)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, -wCoord)); // bottom right
-    tank.push_back(cy::Vec3f(lCoord, hCoord, -wCoord)); // top right
-    tank.push_back(cy::Vec3f(lCoord, hCoord, -wCoord)); // top right
-    tank.push_back(cy::Vec3f(lCoord, hCoord, wCoord)); // top left
-    tank.push_back(cy::Vec3f(lCoord, 0.0f, wCoord)); // bottom left
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // top left
+    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // bottom left
     
+    // Inner walls:
+    float wCoordInner = width / 2 - thickness;
+    float lCoordInner = length / 2 - thickness;
+    float hCoordInner = height;
+
+    // bottom - XZ-plane
+    // coord format: (+-length/2,0,+-width/2)
+
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left
+
+    // front - XY-plane
+    // coord format: (+-length/2,height or thickness,width/2)
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // bottom left 
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // bottom left 
+
+    // back - XY-plane
+    // coord format: (+-length/2,height or thickness,-width/2)
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom left 
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, -wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom left 
+
+    // left - YZ-plane
+    // coord format: (-length/2,height or thickness,+-width/2)
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left 
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // bottom right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, -wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left 
+
+    // right - YZ-plane
+    // coord format: (length/2,height or thickness,+-width/2)
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // bottom left 
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // bottom left
+
+    // Upper walls - XZ-plane
+    // bottom
+    // coord format: (length/2,height or thickness,+-width/2)
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left
     
+    // right
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left
+
+    // top
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
+
+    // left
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left 
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
+    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top left
+    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
+}
+
+static void SetUpWaterSurface(float width, float length, float height) {
+    //tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left 
+    //tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom right
+    //tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
+    //tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
+    //tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top left
+    //tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
 }
 
 static void SetUpCamera() {
