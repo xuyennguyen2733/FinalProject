@@ -18,8 +18,8 @@ float viewWidth = 960;
 std::vector<cy::Vec3f> tank;
 
 // Camera
-cy::Vec3f camPos;
-cy::Vec3f camTar;
+cy::Vec3f camPos = cy::Vec3f(0.0f, 20.0f, 30.0f);
+cy::Vec3f camTar = cy::Vec3f(0.0f, 0.0f, 0.0f);
 
 // Programs
 cy::GLSLProgram tankProg;
@@ -51,6 +51,7 @@ int state = 0;
 int main(int argc, char** argv);
 
 static double D2R(int degrees);
+static cy::Vec3f Mat3Vec3Mul(cy::Matrix3f m, cy::Vec3f v);
 static void SetUpWaterTank(float width, float length, float height);
 static void SetUpCamera();
 static void DrawTank();
@@ -126,39 +127,42 @@ void drag(int x, int y) {
     if (mouseButton == GLUT_RIGHT_BUTTON && inViewPort) {
         bool towardCenter = (x <= oldX && x > centerX) || (x >= oldX && x < centerX);
         if (towardCenter) {
-            tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
+            //tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
+            camPos *= 1.02;
         }
         else {
-            tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
+            //tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
+            camPos *= 0.98;
         }
     }
     else if (mouseButton == GLUT_LEFT_BUTTON && inViewPort) {
 
         float directionX = 0.0f;
         float directionY = 0.0f;
-        if (y < oldY) directionY = -1.0f;
+        /*if (y < oldY) directionY = -1.0f;
         else if (y > oldY) directionY = 1.0f;
         if (x < oldX) directionX = -1.0f;
-        else if (x > oldX) directionX = 1.0f;
-        //camPos = cy::Vec3f(cos(D2R(2.0f)*directionX), 0.0f, sin(D2R(2.0f) * directionX)) * camPos.x + cy::Vec3f(0.0f, 1.0f, 0.0f) * camPos.y + cy::Vec3f(-sin(D2R(2.0f) * directionX),0.0f,cos(D2R(2.0f) * directionX))*camPos.z;
-        //camPos = cy::Vec3f(1.0f, 0.0f, 0.0f) * camPos.x + cy::Vec3f(0.0f, cos(D2R(2.0f)), -sin(D2R(2.0f))) * camPos.y + cy::Vec3f( 0.0f, sin(D2R(2.0f)), cos(D2R(2.0f))) * camPos.z;
-        tankViewMatrix *= tankViewMatrix.RotationY(-D2R(2.0f) * directionX);
-        tankViewMatrix *= tankViewMatrix.RotationX(-D2R(2.0f) * directionY);
-        //viewMatrix *= viewMatrix.RotationX(D2R(2.0f) * directionY);
-        //rotMatrix *= cy::Matrix4f::RotationZ(D2R(5) * directionX);
-        //viewMatrix = cy::Matrix4f::View(camPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
+        else if (x > oldX) directionX = 1.0f;*/
+        directionY = (y - oldY) * 0.1;
+        directionX = (x - oldX) * 0.1;
+
+        float rotAngleX = (directionX * D2R(2.0f));
+        float rotAngleY = (directionY * D2R(2.0f));
+        
+        cy::Matrix3f Rx = cy::Matrix3f::RotationY(rotAngleX);
+        //cy::Matrix3f Ry = cy::Matrix3f::RotationX(rotAngleY);
+
+        camPos = Mat3Vec3Mul(Rx, camPos);
+        //camPos = Mat3Vec3Mul(Ry, camPos);
 
     }
-
+    SetUpCamera();
     glUseProgram(tankProg.GetID());
-    tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
-    tankMv = tankViewMatrix * tankModelMatrix;
-    tankMn = tankMv.GetSubMatrix3();
-    tankMn.Invert();
-    tankMn.Transpose();
     tankProg["mvp"] = tankMvp;
     tankProg["MV"] = tankMv;
     tankProg["MN"] = tankMn;
+    oldX = x;
+    oldY = y;
 }
 
 void hover(int x, int y) {
@@ -210,7 +214,7 @@ int main(int argc, char** argv) {
     glClearColor(0, 0, 0, 0);
 
     // OpenGL Initializations
-    SetUpWaterTank(20.0f, 50.0f, 30.0f);
+    SetUpWaterTank(10.0f, 20.0f, 10.0f);
     SetUpCamera();
     InitPrograms();
 
@@ -223,6 +227,18 @@ int main(int argc, char** argv) {
 
 static double D2R(int degrees) {
     return (degrees * M_PI) / 180;
+}
+
+static cy::Vec3f Mat3Vec3Mul(cy::Matrix3f m, cy::Vec3f v) {
+    float tol = 1e-7;
+    cy::Vec3f result = cy::Vec3f(0.0f,0.0f,0.0f);
+    result.x = m.Column(0).Dot(v);
+    //result.x = abs(result.x) < tol ? 0 : result.x;
+    result.y = m.Column(1).Dot(v);
+    //result.y = abs(result.y) < tol ? 0 : result.y;
+    result.z = m.Column(2).Dot(v);
+    //result.z = abs(result.z) < tol ? 0 : result.z;
+    return result;
 }
 
 static void SetUpWaterTank(float width, float length, float height) {
@@ -288,12 +304,9 @@ static void SetUpWaterTank(float width, float length, float height) {
 }
 
 static void SetUpCamera() {
-    camPos = cy::Vec3f(50.0f, 40.0f, 50.0f);
-    camTar = cy::Vec3f(0.0f, 0.0f, 0.0f);
-
     tankViewMatrix = cy::Matrix4f::View(camPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
     tankProjMatrix = cy::Matrix4f::Perspective(D2R(60.0f), viewWidth / viewHeight, 0.1f, 1000.0f);
-    tankModelMatrix = cy::Matrix4f::RotationY(0.0f);
+    tankModelMatrix = cy::Matrix4f::RotationZ(D2R(0.0f));
     tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
     tankMv = tankViewMatrix * tankModelMatrix;
     tankMn = tankMv.GetSubMatrix3();
