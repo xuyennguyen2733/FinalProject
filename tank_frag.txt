@@ -23,14 +23,11 @@ void main()
 	float phi = pow(max(dot(n,h),0.0),10.0);
 
 	vec4 Kd = texture(textureID, texCoord);
-	vec4 Ks = vec4(1.0,1.0,1.0,1.0);
+	vec4 Ks = vec4(0.5,0.5,0.5,1.0);
 
-	vec4 ambient = vec4(vec3(0.5,0.5,0.5) * Ks.rgb,1.0);
-	vec4 specular = vec4(Ks.rgb * phi,1.0);
-	vec4 diffuse = Kd + theta;
+	vec4 ambient = vec4(vec3(0.3,0.3,0.3) * Kd.rgb,1.0);
+	vec4 specular = Ks * phi;
+	vec4 diffuse = Kd * theta;
 
-	//vec3 normalizedPos = normalize(position);
-	//color = vec4(abs(normalizedPos),1);
-	//color = texture(textureID, texCoord);
-	color = I * (diffuse+specular);
+	color = diffuse + ambient + specular;
 }

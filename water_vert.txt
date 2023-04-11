@@ -2,6 +2,7 @@
 
 layout(location=0) in vec3 pos;
 layout(location=1) in vec3 norm;
+layout(location=2) in vec2 txc;
 
 uniform mat4 mvp;
 uniform mat4 mv;
@@ -12,7 +13,7 @@ uniform vec3 light;
 out vec3 lightDir;
 out vec3 norms;
 out vec3 position;
-//out vec2 texCoord;
+out vec2 texCoord;
 out mat3 matn;
 out vec4 view;
 
@@ -21,7 +22,7 @@ void main()
 {
 	gl_Position = mvp * vec4(pos,1);
 	position = pos;
-	//texCoord = txc;
+	texCoord = txc;
 	lightDir = light;
 	matn = mn;
 	norms = norm;
