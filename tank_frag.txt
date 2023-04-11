@@ -2,9 +2,13 @@
 
 layout(location=0) out vec4 color;
 
+uniform sampler2D textureID;
+
 in vec3 position;
+in vec2 texCoord;
 
 void main() {
-	vec3 normalizedPos = normalize(position);
-	color = vec4(abs(normalizedPos),1);
+	//vec3 normalizedPos = normalize(position);
+	//color = vec4(abs(normalizedPos),1);
+	color = texture(textureID, texCoord);
 }
