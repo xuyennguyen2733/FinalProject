@@ -17,7 +17,10 @@ float viewWidth = 960;
 // Meshes
 std::vector<cy::Vec3f> tank;
 std::vector<cy::Vec2f> tankTexCoord;
+std::vector<cy::Vec3f> tankNormCoord;
+
 std::vector<cy::Vec3f> waterSurface;
+std::vector<cy::Vec3f> waterSurfaceNorm;
 
 // Mesh attributes
 float height;
@@ -33,6 +36,9 @@ std::string tankTexName;
 // Camera
 cy::Vec3f camPos = cy::Vec3f(0.0f, 20.0f, 30.0f);
 cy::Vec3f camTar = cy::Vec3f(0.0f, 0.0f, 0.0f);
+
+// Light
+cy::Vec3f light = cy::Vec3f(100.0f, 20.0f, 30.0f);
 
 // Programs
 cy::GLSLProgram tankProg;
@@ -55,7 +61,9 @@ cy::Matrix3f waterMn;
 // Buffers
 GLuint tankFaceBuffer;
 GLuint tankTexBuffer;
+GLuint tankNormBuffer;
 GLuint waterFaceBuffer;
+GLuint waterNormBuffer;
 
 // Vertex Array Objects
 GLuint tankVertexArrayObject;
@@ -166,7 +174,8 @@ void drag(int x, int y) {
             //tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
             camPos *= 1.02;
         }
-        else {
+        else 
+        {
             //tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
             camPos *= 0.98;
         }
@@ -197,11 +206,13 @@ void drag(int x, int y) {
     tankProg["mvp"] = tankMvp;
     tankProg["MV"] = tankMv;
     tankProg["MN"] = tankMn;
+    tankProg["light"] = light;
 
     glUseProgram(waterProg.GetID());
     waterProg["mvp"] = waterMvp;
     waterProg["MV"] = waterMv;
     waterProg["MN"] = waterMn;
+    waterProg["light"] = light;
     oldX = x;
     oldY = y;
 }
@@ -307,13 +318,21 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     
     // bottom - XZ-plane
     // coord format: (+-length/2,0,+-width/2)
-    
     tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left
     tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom right
     tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // top right
     tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // top right
     tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // top left
     tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left
+
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // bottom left
+
 
     // bottom texture coordinates
     tankTexCoord.push_back(cy::Vec2f(0.0f, width/length)); // bottom left
@@ -332,6 +351,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // top left
     tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // bottom left 
 
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
+
     // front texture coordinates
     tankTexCoord.push_back(cy::Vec2f(0.0f, 0.0f)); // bottom left
     tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom right
@@ -348,6 +375,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
     tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top left
     tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
+
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
 
     // back texture coordinates
     tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom left
@@ -366,6 +401,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top left
     tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
 
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
+
     // left texture coordinates
     tankTexCoord.push_back(cy::Vec2f(width/length, 0.0f)); // bottom left
     tankTexCoord.push_back(cy::Vec2f(0.0f, 0.0f)); // bottom right
@@ -382,6 +425,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
     tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // top left
     tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // bottom left
+
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
 
     // right texture coordinates
     tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom left
@@ -406,6 +457,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // top left
     tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left
 
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+
     // bottom texture coordinates
     tankTexCoord.push_back(cy::Vec2f(-lCoordInner / length + 0.5, -wCoordInner / width + 0.5)); // bottom left
     tankTexCoord.push_back(cy::Vec2f(lCoordInner / length + 0.5, -wCoordInner / width + 0.5)); // bottom right
@@ -422,6 +481,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top right
     tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top left
     tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // bottom left 
+
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
 
     // front texture coordinates
     tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, thicknessTexCoord)); // bottom left
@@ -440,6 +507,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, -wCoordInner)); // top left
     tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom left 
 
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
+
     // back texture coordinates
     tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, thicknessTexCoord)); // bottom left
     tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, thicknessTexCoord)); // bottom right
@@ -456,6 +531,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top right
     tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, -wCoordInner)); // top left
     tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left 
+
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
 
     // left texture coordinates
     tankTexCoord.push_back(cy::Vec2f(width / length-thicknessTexCoord, thicknessTexCoord)); // bottom left
@@ -474,6 +557,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top left
     tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // bottom left
 
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
+
     // right texture coordinates
     tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, thicknessTexCoord)); // bottom left
     tankTexCoord.push_back(cy::Vec2f(1 - width / length + thicknessTexCoord, thicknessTexCoord)); // bottom right
@@ -491,6 +582,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top left
     tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left
 
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+
     // front texture coordinates
     tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // bottom left
     tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // bottom right
@@ -506,6 +605,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top right
     tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, wCoordInner)); // top left
     tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left
+
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
 
     // texture coordinates
     tankTexCoord.push_back(cy::Vec2f(1.0f,height/length)); // bottom left
@@ -523,6 +630,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top left
     tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
 
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+
     // texture coordinates
     tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // bottom left
     tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // bottom right
@@ -538,6 +653,14 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
     tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top left
     tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
+    
+    //normal Coordinates
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
+    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
 
     // texture coordinates
     tankTexCoord.push_back(cy::Vec2f(width / length, height / length)); // bottom left
@@ -548,7 +671,8 @@ static void SetUpWaterTank(float width, float length, float height, float thickn
     tankTexCoord.push_back(cy::Vec2f(width / length, height / length)); // bottom left
 }
 
-static void LoadMeshes() {
+static void LoadMeshes() 
+{
     cy::TriMesh mesh;
     bool success = mesh.LoadFromFileObj("./container.obj");
     mesh.ComputeBoundingBox();
@@ -577,6 +701,14 @@ static void SetUpWaterSurface(float width, float length, float height) {
     waterSurface.push_back(cy::Vec3f(lCoord, hCoord, -wCoord)); // top right
     waterSurface.push_back(cy::Vec3f(-lCoord, hCoord, -wCoord)); // top left
     waterSurface.push_back(cy::Vec3f(-lCoord, hCoord, wCoord)); // bottom left
+
+    //normals
+    waterSurfaceNorm.push_back(cy::Vec3f(0, 1, 0)); // bottom left 
+    waterSurfaceNorm.push_back(cy::Vec3f(0, 1, 0)); // bottom right
+    waterSurfaceNorm.push_back(cy::Vec3f(0, 1, 0)); // top right
+    waterSurfaceNorm.push_back(cy::Vec3f(0, 1, 0)); // top right
+    waterSurfaceNorm.push_back(cy::Vec3f(0, 1, 0)); // top left
+    waterSurfaceNorm.push_back(cy::Vec3f(0, 1, 0)); // bottom left
 }
 
 static void SetUpCamera() {
@@ -608,6 +740,7 @@ static void InitPrograms() {
     tankProg["mvp"] = tankMvp;
     tankProg["mv"] = tankMv;
     tankProg["mn"] = tankMn;
+    tankProg["light"] = light;
 
     glGenVertexArrays(1, &tankVertexArrayObject);
     glBindVertexArray(tankVertexArrayObject);
@@ -634,12 +767,24 @@ static void InitPrograms() {
 
     tankProg.SetAttribBuffer("txc", tankTexBuffer, 2);
 
+    glGenBuffers(1, &tankNormBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, tankNormBuffer);
+    glBufferData(GL_ARRAY_BUFFER,
+        tankNormCoord.size() * sizeof(cy::Vec3f),
+        &tankNormCoord[0],
+        GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, tankNormBuffer);
+
+    tankProg.SetAttribBuffer("norm", tankNormBuffer, 3);
+
     // water surface
     waterProg.BuildFiles("water_vert.txt", "water_frag.txt");
     waterProg.Bind();
     waterProg["mvp"] = waterMvp;
     waterProg["mv"] = waterMv;
     waterProg["mn"] = waterMn;
+    waterProg["light"] = light;
 
     glGenVertexArrays(1, &waterVertexArrayObject);
     glBindVertexArray(waterVertexArrayObject);
@@ -654,6 +799,19 @@ static void InitPrograms() {
     glBindBuffer(GL_ARRAY_BUFFER, waterFaceBuffer);
 
     waterProg.SetAttribBuffer("pos", waterFaceBuffer, 3);
+
+    glBindVertexArray(waterVertexArrayObject);
+
+    glGenBuffers(1, &waterNormBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, waterNormBuffer);
+    glBufferData(GL_ARRAY_BUFFER,
+        waterSurfaceNorm.size() * sizeof(cy::Vec3f),
+        &waterSurfaceNorm[0],
+        GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, waterNormBuffer);
+
+    waterProg.SetAttribBuffer("norm", waterNormBuffer, 3);
 }
 
 static void LoadTextures() {
