@@ -5,8 +5,8 @@ layout(location=0) out vec4 color;
 uniform sampler2D textureID;
 uniform vec3 light;
 
-//in vec2 texCoord;
-//in vec3 norms;
+in vec2 texCoord;
+in vec3 norms;
 //in vec3 view;
 //in mat3 matrixNormal;
 vec3 lightDir = light;
@@ -23,12 +23,12 @@ void main()
 	float phi = pow(max(dot(n,h),0.0),50.0);
 
 	vec4 Kd = vec4(0.0,0.0,1.0,1.0);
-	vec4 Ks = vec4(0.5,0.5,0.75,1.0);
+	vec4 Ks = vec4(0.5,0.5,0.75,1.0);*/
 
-	vec4 ambient = texture(textureID, texCoord) * 0.1;
-	vec4 specular = Ks * phi;
-	vec4 diffuse = Kd * theta;
+	vec4 ambient = texture(textureID, texCoord) * 1;
+	//vec4 specular = Ks * phi;
+	//vec4 diffuse = Kd * theta;
 
-	color = diffuse + ambient + specular;*/
-	color = vec4(1,1,1,1);
+	//color = diffuse + ambient + specular;
+	color = vec4(0,0,1,1) + ambient;
 }

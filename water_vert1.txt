@@ -9,8 +9,8 @@ uniform mat4 mv;
 uniform mat3 mn;
 uniform float layer;
 
-//out vec3 norms;
-//out vec2 texCoord;
+out vec3 norms;
+out vec2 texCoord;
 //out vec3 view;
 //out mat3 matrixNormal;
 //out float layers;
@@ -18,8 +18,8 @@ uniform float layer;
 void main()
 {
 	gl_Position = mvp * vec4(pos,1);
-	//texCoord = txc;
-	//norms = norm;
+	texCoord = txc;
+	norms = norm;
 	//layers = layer;
 	//view = normalize(-vec3(mv * vec4(pos,1)));
 	//matrixNormal = mn;
