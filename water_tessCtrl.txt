@@ -1,0 +1,76 @@
+#version 410 core
+
+layout(vertices = 4) out;
+
+//in vec3 lightDir[];
+//in vec3 norms[];
+in vec2 texCoord[];
+//in vec4 view[];
+//in float layers[];
+//in mat3 outMN[];
+//in mat4 outMVP[];
+
+in DATA{
+    vec2 texCoord;
+    mat3 outMN;
+    mat4 outMVP;
+    vec3 outLight;
+    vec3 outNorms;
+    vec3 outPos;
+    vec4 outView;
+	float layer;
+} data_in[];
+
+out vec2 txc[];
+//out mat3 mn[];
+//out mat4 mvp[];
+//out vec3 l[];
+//out vec3 n[];
+//out vec4 vw[];
+
+out DATA{
+    vec2 texCoord;
+    mat3 outMN;
+    mat4 outMVP;
+    vec3 outLight;
+    vec3 outNorms;
+    vec3 outPos;
+    vec4 outView;
+} data_out[];
+
+void main()
+{
+	//gl_TessLevelOuter[0] = layers[0];
+	//gl_TessLevelOuter[1] = layers[0];
+	//gl_TessLevelOuter[2] = layers[0];
+	//gl_TessLevelOuter[3] = layers[0];
+
+	//gl_TessLevelInner[0] = layers[0];
+	//gl_TessLevelInner[1] = layers[0];
+
+	gl_TessLevelOuter[0] = 1;
+	gl_TessLevelOuter[1] = 1;
+	gl_TessLevelOuter[2] = 1;
+	gl_TessLevelOuter[3] = 1;
+
+	gl_TessLevelInner[0] = 1;
+	gl_TessLevelInner[1] = 1;
+	
+	gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;
+	//txc[gl_InvocationID] = texCoord[gl_InvocationID];
+	//mn[gl_InvocationID] = outMN[gl_InvocationID];
+	//mvp[gl_InvocationID] = outMVP[gl_InvocationID];
+	//l[gl_InvocationID] = lightDir[gl_InvocationID];
+	//n[gl_InvocationID] = norms[gl_InvocationID];
+	//pos[gl_InvocationID] = position[gl_InvocationID];
+	//vw[gl_InvocationID] = view[gl_InvocationID];
+
+	data_out[gl_InvocationID].texCoord = data_in[gl_InvocationID].texCoord;
+	data_out[gl_InvocationID].outMN = data_in[gl_InvocationID].outMN;
+	data_out[gl_InvocationID].outMVP = data_in[gl_InvocationID].outMVP;
+	data_out[gl_InvocationID].outLight = data_in[gl_InvocationID].outLight;
+	data_out[gl_InvocationID].outNorms = data_in[gl_InvocationID].outNorms;
+	data_out[gl_InvocationID].outPos = data_in[gl_InvocationID].outPos;
+	data_out[gl_InvocationID].outView = data_in[gl_InvocationID].outView;
+	txc[gl_InvocationID] = texCoord[gl_InvocationID];
+}

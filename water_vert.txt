@@ -8,23 +8,50 @@ uniform mat4 mvp;
 uniform mat4 mv;
 uniform mat3 mn;
 uniform vec3 light;
+uniform float layer;
 
 
-out vec3 lightDir;
-out vec3 norms;
-out vec3 position;
+//out vec3 lightDir;
+//out vec3 norms;
+//out vec3 position;
+//out vec2 texCoord;
+//out vec4 view;
+//out float layers;
+//out mat3 outMN;
+//out mat4 outMVP;
+
 out vec2 texCoord;
-out mat3 matn;
-out vec4 view;
+
+out DATA{
+    vec2 texCoord;
+    mat3 outMN;
+    mat4 outMVP;
+    vec3 outLight;
+    vec3 outNorms;
+    vec3 outPos;
+    vec4 outView;
+	float layer;
+} data_out;
 
 
 void main()
 {
 	gl_Position = mvp * vec4(pos,1);
-	position = pos;
+	//position = pos;
+	//texCoord = txc;
+	//lightDir = light;
+	//norms = norm;
+	//view = mv * vec4(pos,1.0);
+	//layers = layer;
+	//outMN = mn;
+	//outMVP = mvp;
+	data_out.texCoord = txc;
+	data_out.outMN = mn;
+	data_out.outMVP = mvp;
+	data_out.outLight = light;
+	data_out.outNorms = norm;
+	data_out.outPos = pos;
+	data_out.outView = mv * vec4(pos,1.0);
+	data_out.layer = layer;
 	texCoord = txc;
-	lightDir = light;
-	matn = mn;
-	norms = norm;
-	view = mv * vec4(pos,1.0);
 }

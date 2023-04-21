@@ -1,0 +1,26 @@
+#version 330 core
+
+layout(location=0) in vec3 pos;
+layout(location=1) in vec3 norm;
+layout(location=2) in vec2 txc;
+
+uniform mat4 mvp;
+uniform mat4 mv;
+uniform mat3 mn;
+uniform float layer;
+
+//out vec3 norms;
+//out vec2 texCoord;
+//out vec3 view;
+//out mat3 matrixNormal;
+//out float layers;
+
+void main()
+{
+	gl_Position = mvp * vec4(pos,1);
+	//texCoord = txc;
+	//norms = norm;
+	//layers = layer;
+	//view = normalize(-vec3(mv * vec4(pos,1)));
+	//matrixNormal = mn;
+}

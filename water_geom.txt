@@ -1,0 +1,72 @@
+#version 330 core
+
+layout (triangles) in;
+layout (triangle_strip, max_vertices = 4) out;
+
+in DATA{
+    vec2 texCoord;
+    mat3 outMN;
+    mat4 outMVP;
+    vec3 outLight;
+    vec3 outNorms;
+    vec3 outPos;
+    vec4 outView;
+} data_in[];
+
+in vec2 outTexCoord[];
+
+out vec2 texCoord;
+out mat3 matrixNormal ;
+out mat4 outMVP;
+out vec3 lightDir ;
+out vec3 norms;
+out vec3 position;
+out vec4 view;
+
+void main()
+{
+    gl_Position = gl_in[0].gl_Position;
+    texCoord = outTexCoord[0];
+    matrixNormal = data_in[0].outMN;
+    outMVP = data_in[0].outMVP;
+    lightDir = data_in[0].outLight;
+    norms = data_in[0].outNorms;
+    position = data_in[0].outPos;
+    view = data_in[0].outView;
+
+    EmitVertex();
+    
+    gl_Position = gl_in[1].gl_Position;
+    texCoord = outTexCoord[1];
+    matrixNormal = data_in[1].outMN;
+    outMVP = data_in[1].outMVP;
+    lightDir = data_in[1].outLight;
+    norms = data_in[1].outNorms;
+    position = data_in[1].outPos;
+    view = data_in[1].outView;
+
+    EmitVertex();
+    
+    gl_Position = gl_in[2].gl_Position;
+    texCoord = outTexCoord[2];
+    matrixNormal = data_in[2].outMN;
+    outMVP = data_in[2].outMVP;
+    lightDir = data_in[2].outLight;
+    norms = data_in[2].outNorms;
+    position = data_in[2].outPos;
+    view = data_in[2].outView;
+
+    EmitVertex();
+    
+    gl_Position = gl_in[0].gl_Position;
+    texCoord = outTexCoord[0];
+    matrixNormal = data_in[0].outMN;
+    outMVP = data_in[0].outMVP;
+    lightDir = data_in[0].outLight;
+    norms = data_in[0].outNorms;
+    position = data_in[0].outPos;
+    view = data_in[0].outView;
+    
+    EmitVertex();
+    EndPrimitive();
+}

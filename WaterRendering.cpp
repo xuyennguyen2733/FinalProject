@@ -234,17 +234,17 @@ void drag(int x, int y) {
         directionX = (x - oldX) * 0.1;
 
         float rotAngleX = (directionX * D2R(2.0f));
-        float rotAngleY = (directionY * D2R(2.0f));
+        //float rotAngleY = (directionY * D2R(2.0f));
         cy::Matrix3f Rx = cy::Matrix3f::RotationY(rotAngleX);
-        cy::Matrix3f Ry = cy::Matrix3f::RotationX(rotAngleY);
+        //cy::Matrix3f Ry = cy::Matrix3f::RotationX(rotAngleY);
         if (ctrlDown) {
             camPos = Mat3Vec3Mul(Rx, camPos);
-            camPos = Mat3Vec3Mul(Ry, camPos);
+            //camPos = Mat3Vec3Mul(Ry, camPos);
             SetUpCamera();
         }
         else {
             tankViewMatrix *= tankViewMatrix.RotationY(D2R(2.0f) * directionX);
-            tankViewMatrix *= Ry;
+            //tankViewMatrix *= Ry;
             tankMv = tankViewMatrix * tankModelMatrix;
             tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
             tankMn = tankMv.GetSubMatrix3();
@@ -252,7 +252,7 @@ void drag(int x, int y) {
             tankMn.Transpose();
 
             waterViewMatrix *= waterViewMatrix.RotationY(D2R(2.0f) * directionX);
-            waterViewMatrix *= Ry;
+            //waterViewMatrix *= Ry;
             waterMv = waterViewMatrix * waterModelMatrix;
             waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
             waterMn = waterMv.GetSubMatrix3();
@@ -456,6 +456,51 @@ static void SetUpCamera() {
 }
 
 static void InitPrograms() {
+
+    // water surface
+    waterProg.BuildFiles("water_vert1.txt", "water_frag1.txt", NULL, "water_tessCtrl1.txt", "water_tessEval1.txt");
+    waterProg.Bind();
+    waterProg["mvp"] = waterMvp;
+    waterProg["mv"] = waterMv;
+    waterProg["mn"] = waterMn;
+    waterProg["light"] = light;
+    waterProg["layer"] = 1.0f;
+
+    glGenVertexArrays(1, &waterVertexArrayObject);
+    glBindVertexArray(waterVertexArrayObject);
+
+    glGenBuffers(1, &waterFaceBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, waterFaceBuffer);
+    glBufferData(GL_ARRAY_BUFFER,
+        waterSurface.size() * sizeof(cy::Vec3f),
+        &waterSurface[0],
+        GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, waterFaceBuffer);
+
+    waterProg.SetAttribBuffer("pos", waterFaceBuffer, 3);
+
+    glGenBuffers(1, &waterNormBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, waterNormBuffer);
+    glBufferData(GL_ARRAY_BUFFER,
+        waterSurfaceNorm.size() * sizeof(cy::Vec3f),
+        &waterSurfaceNorm[0],
+        GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, waterNormBuffer);
+
+    waterProg.SetAttribBuffer("norm", waterNormBuffer, 3);
+
+    glGenBuffers(1, &waterTexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, waterTexBuffer);
+    glBufferData(GL_ARRAY_BUFFER,
+        waterTexCoord.size() * sizeof(cy::Vec3f),
+        &waterTexCoord[0],
+        GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, waterTexBuffer);
+
+    waterProg.SetAttribBuffer("txc", waterTexBuffer, 2);
     // water tank
     tankProg.BuildFiles("tank_vert.txt", "tank_frag.txt");
     tankProg.Bind();
@@ -500,49 +545,7 @@ static void InitPrograms() {
 
     tankProg.SetAttribBuffer("norm", tankNormBuffer, 3);
 
-    // water surface
-    waterProg.BuildFiles("water_vert.txt", "water_frag.txt");
-    waterProg.Bind();
-    waterProg["mvp"] = waterMvp;
-    waterProg["mv"] = waterMv;
-    waterProg["mn"] = waterMn;
-    waterProg["light"] = light;
-
-    glGenVertexArrays(1, &waterVertexArrayObject);
-    glBindVertexArray(waterVertexArrayObject);
-
-    glGenBuffers(1, &waterFaceBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, waterFaceBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-        waterSurface.size() * sizeof(cy::Vec3f),
-        &waterSurface[0],
-        GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, waterFaceBuffer);
-
-    waterProg.SetAttribBuffer("pos", waterFaceBuffer, 3);
-
-    glGenBuffers(1, &waterTexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, waterTexBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-        waterTexCoord.size() * sizeof(cy::Vec3f),
-        &waterTexCoord[0],
-        GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, waterTexBuffer);
-
-    waterProg.SetAttribBuffer("txc", waterTexBuffer, 2);
-
-    glGenBuffers(1, &waterNormBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, waterNormBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-        waterSurfaceNorm.size() * sizeof(cy::Vec3f),
-        &waterSurfaceNorm[0],
-        GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, waterNormBuffer);
-
-    waterProg.SetAttribBuffer("norm", waterNormBuffer, 3);
+    
 }
 
 static void LoadTextures() {
