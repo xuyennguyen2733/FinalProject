@@ -5,19 +5,23 @@ layout(location=0) out vec4 color;
 uniform sampler2D textureID;
 uniform samplerCube cubemap;
 uniform vec3 cameraPos;
+uniform mat4 modelMatrix;
 uniform vec3 light;
 
 in vec2 texCoord;
 in vec3 norms;
 in vec3 view;
 in mat3 matrixNormal;
+in vec3 position;
 vec3 lightDir = light;
 
 void main() 
 {
+	vec3 worldVertexPosition = vec3(modelMatrix * vec4(position,1.0));
+	vec3 incident = -normalize(worldVertexPosition);
+
 	float shininess = 2.0; 
 	float ratio = 1.00 / 1.52;
-
 
 	vec4 I = vec4(1.0,1.0,1.0,1.0);
 	vec3 l = normalize(lightDir);
@@ -25,7 +29,7 @@ void main()
 	vec3 v = -normalize(vec3(view));
 	vec3 h = normalize(l+v);
 
-	vec3 refl = reflect(v,n);
+	vec3 refl = reflect(incident,n);
 	vec3 refr = refract(v,n, ratio);
 
 	float theta = max(dot(l,n),0.0);
@@ -40,6 +44,7 @@ void main()
 
 	//color = (diffuse + ambient) * texture(cubemap,ref) + specular;
 	//color = vec4(0,0,1,1) + ambient;
-	color = vec4(0,0,1,1) + texture(cubemap,refl);
-	//color = vec4(0,0,1,1) + texture(cubemap, refl) + texture(cubemap,refr);
+	//color = vec4(0,0,1,1) + texture(cubemap, -worldRefl) + texture(cubemap,refr);
+
+	color = vec4(0,0,1,1) + (vec4(vec3(texture(cubemap, refl)),1.0) * 0.4);
 }

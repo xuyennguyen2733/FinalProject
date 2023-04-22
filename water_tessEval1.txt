@@ -11,6 +11,7 @@ out vec3 norms;
 out vec2 texCoord;
 out vec3 view;
 out mat3 matrixNormal;
+out vec3 position;
 
 vec4 interpolate(vec4 v0, vec4 v1, vec4 v2, vec4 v3)
 {
@@ -68,5 +69,7 @@ void main()
     texCoord = tex;
     view = WV;
     matrixNormal = mn[0];
+
+    position = vec3(pos);
 
 }

@@ -66,6 +66,7 @@ cy::Matrix3f tankMn;
 cy::Matrix4f waterViewMatrix;
 cy::Matrix4f waterProjMatrix;
 cy::Matrix4f waterModelMatrix;
+cy::Matrix4f waterRefModelMatrix;
 cy::Matrix4f waterMvp;
 cy::Matrix4f waterMv;
 cy::Matrix3f waterMn;
@@ -282,6 +283,8 @@ void drag(int x, int y)
             waterMn = environmentMv.GetSubMatrix3();
             environmentMn.Invert();
             environmentMn.Transpose();
+
+            waterRefModelMatrix *= waterRefModelMatrix.RotationZ(D2R(2.0f) * directionX);
         }
         else
         {
@@ -321,6 +324,8 @@ void drag(int x, int y)
     waterProg["mvp"] = waterMvp;
     waterProg["mv"] = waterMv;
     waterProg["mn"] = waterMn;
+    waterProg["cameraPos"] = camPos;
+    waterProg["modelMatrix"] = waterRefModelMatrix;
     //waterProg["light"] = light;
 
     glUseProgram(environmentProg.GetID());
@@ -523,11 +528,11 @@ static void LoadMeshes()
         //load image from file
         lodepng::decode(cubeTexture, envW, envH, cubeTextureImg[i]);
         envmap.SetImageRGBA((cy::GLTextureCubeMap::Side)i, &cubeTexture[0], envW, envH);
-    }
-    //set image data
+    }    //set image data
     envmap.BuildMipmaps();
     envmap.SetSeamless();
     envmap.Bind(0);
+
 }
 
 static void SetUpWaterSurface(float width, float length, float height) 
@@ -577,6 +582,8 @@ static void SetUpCamera()
     waterMn = waterMv.GetSubMatrix3();
     waterMn.Invert();
     waterMn.Transpose();
+
+    waterRefModelMatrix = waterModelMatrix;
 
     // Environment Map
 
@@ -660,6 +667,7 @@ static void InitPrograms()
     waterProg["light"] = light;
     waterProg["layer"] = 20.0f;
     waterProg["cameraPos"] = camPos;
+    waterProg["modelMatrix"] = waterRefModelMatrix;
 
     glGenVertexArrays(1, &waterVertexArrayObject);
     glBindVertexArray(waterVertexArrayObject);
