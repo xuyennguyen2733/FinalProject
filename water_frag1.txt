@@ -2,7 +2,7 @@
 
 layout(location=0) out vec4 color;
 
-uniform sampler2D textureID;
+uniform sampler2D waterTexID;
 uniform samplerCube cubemap;
 uniform vec3 cameraPos;
 uniform mat4 modelMatrix;
@@ -35,10 +35,10 @@ void main()
 	float theta = max(dot(l,n),0.0);
 	float phi = pow(max(dot(n,h),0.0),shininess);
 
-	vec4 Kd = vec4(0.0,0.0,1.0,1.0);
+	vec4 Kd = vec4(0.0,0.0,1.0,0.5);
 	vec4 Ks = vec4(0.5,0.5,0.75,1.0);
 
-	vec4 ambient = texture(textureID, texCoord) * 0.01;
+	vec4 ambient = texture(waterTexID, texCoord) * 0.8;
 	vec4 specular = Ks * phi;
 	vec4 diffuse = Kd * theta;
 
@@ -46,5 +46,7 @@ void main()
 	//color = vec4(0,0,1,1) + ambient;
 	//color = vec4(0,0,1,1) + texture(cubemap, -worldRefl) + texture(cubemap,refr);
 
-	color = vec4(0,0,1,1) + (vec4(vec3(texture(cubemap, refl)),1.0) * 0.4);
+	//color = vec4(0,0,1,1) + (vec4(vec3(texture(cubemap, refl)),1.0) * 0.4);
+	//color = specular + diffuse + ambient;
+	color = texture(waterTexID, texCoord);
 }

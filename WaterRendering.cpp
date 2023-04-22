@@ -38,8 +38,10 @@ float thickness;
 
 // Texture attributes
 std::vector<unsigned char> tankTexture;
-unsigned tankTexWidth, tankTexHeight;
+std::vector<unsigned char> waterTexture;
+unsigned tankTexWidth, tankTexHeight, waterTexWidth, waterTexHeight;
 std::string tankTexName;
+std::string waterTexName;
 
 // Camera
 cy::Vec3f camPos = cy::Vec3f(0.0f, 20.0f, 30.0f);
@@ -93,6 +95,9 @@ GLuint environmentVertexArrayObject;
 
 // Texture IDs
 GLuint tankTexID;
+GLuint waterTexID;
+GLuint waterDepthMap;
+GLuint waterNormalMap;
 
 // Mouse statistics
 float oldX = 0;
@@ -710,6 +715,8 @@ static void InitPrograms()
 
 static void LoadTextures() 
 {
+    glUseProgram(tankProg.GetID());
+    glActiveTexture(GL_TEXTURE0);
     tankTexName = "./tile.png";
     bool textureLoaded = lodepng::decode(tankTexture, tankTexWidth, tankTexHeight, tankTexName);
     glGenTextures(1, &tankTexID);
@@ -727,18 +734,33 @@ static void LoadTextures()
     );
     glGenerateMipmap(GL_TEXTURE_2D);
     GLint sampler = glGetUniformLocation(tankProg.GetID(), "textureID");
-    glUseProgram(tankProg.GetID());
+    
     glUniform1i(sampler, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, tankTexID);
 
-    GLint waterSampler = glGetUniformLocation(waterProg.GetID(), "textureID");
     glUseProgram(waterProg.GetID());
-    glUniform1i(waterSampler, 0);
+    glActiveTexture(GL_TEXTURE1);
+    waterTexName = "./water/water1_texture.png";
+    textureLoaded = lodepng::decode(waterTexture, waterTexWidth, waterTexHeight, waterTexName);
+    glGenTextures(1, &waterTexID);
+    glBindTexture(GL_TEXTURE_2D, waterTexID);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        waterTexWidth,
+        waterTexHeight,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        &waterTexture[0]
+    );
+    GLint waterSampler = glGetUniformLocation(waterProg.GetID(), "waterTexID");
+    glUniform1i(waterSampler, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, tankTexID);
+    
+    glBindTexture(GL_TEXTURE_2D, waterTexID);
 
 }
 
