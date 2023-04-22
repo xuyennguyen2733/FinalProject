@@ -201,62 +201,64 @@ void click(int button, int state, int x, int y) {
     oldY = y;
 }
 
-void drag(int x, int y) {
+void drag(int x, int y) 
+{
     // Handle mouse motion here
     // while a button is down
     bool inViewPort = (x >= 0 && x <= viewWidth && y >= 0 && y <= viewHeight);
 
-    if (mouseButton == GLUT_RIGHT_BUTTON && inViewPort) {
+    if (mouseButton == GLUT_RIGHT_BUTTON && inViewPort) 
+    {
         bool towardCenter = (x <= oldX && x > centerX) || (x >= oldX && x < centerX);
-        if (towardCenter) {
-            if (ctrlDown) {
-                camPos *= 1.02;
-                SetUpCamera();
-            }
-            else {
-                tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
-                tankMv = tankViewMatrix * tankModelMatrix;
-                tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
-                tankMn = tankMv.GetSubMatrix3();
-                tankMn.Invert();
-                tankMn.Transpose();
+            if (towardCenter) {
+                if (ctrlDown) {
+                    camPos *= 1.02;
+                    SetUpCamera();
+                }
+                else {
+                    tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
+                    tankMv = tankViewMatrix * tankModelMatrix;
+                    tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
+                    tankMn = tankMv.GetSubMatrix3();
+                    tankMn.Invert();
+                    tankMn.Transpose();
 
-                waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
-                waterMv = waterViewMatrix * waterModelMatrix;
-                waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
-                waterMn = waterMv.GetSubMatrix3();
-                waterMn.Invert();
-                waterMn.Transpose();
-            }
-            //
-            
-        }
-        else 
-        {
-            if (ctrlDown) {
-                camPos *= 0.98;
-                SetUpCamera();
-            }
-            else {
-                tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
-                tankMv = tankViewMatrix * tankModelMatrix;
-                tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
-                tankMn = tankMv.GetSubMatrix3();
-                tankMn.Invert();
-                tankMn.Transpose();
+                    waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
+                    waterMv = waterViewMatrix * waterModelMatrix;
+                    waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+                    waterMn = waterMv.GetSubMatrix3();
+                    waterMn.Invert();
+                    waterMn.Transpose();
+                }
+                //
 
-                waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
-                waterMv = waterViewMatrix * waterModelMatrix;
-                waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
-                waterMn = waterMv.GetSubMatrix3();
-                waterMn.Invert();
-                waterMn.Transpose();
             }
-            //
-            
-        }
+            else
+            {
+                if (ctrlDown)
+                {
+                    camPos *= 0.98;
+                    SetUpCamera();
+                }
+                else {
+                    tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
+                    tankMv = tankViewMatrix * tankModelMatrix;
+                    tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
+                    tankMn = tankMv.GetSubMatrix3();
+                    tankMn.Invert();
+                    tankMn.Transpose();
+
+                    waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
+                    waterMv = waterViewMatrix * waterModelMatrix;
+                    waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+                    waterMn = waterMv.GetSubMatrix3();
+                    waterMn.Invert();
+                    waterMn.Transpose();
+                }
+            }
     }
-    else if (mouseButton == GLUT_LEFT_BUTTON && inViewPort) {
+    else if (mouseButton == GLUT_LEFT_BUTTON && inViewPort) 
+    {
 
         float directionX = 0.0f;
         float directionY = 0.0f;
@@ -271,27 +273,41 @@ void drag(int x, int y) {
         //float rotAngleY = (directionY * D2R(2.0f));
         cy::Matrix3f Rx = cy::Matrix3f::RotationY(rotAngleX);
         //cy::Matrix3f Ry = cy::Matrix3f::RotationX(rotAngleY);
-        if (ctrlDown) {
-            camPos = Mat3Vec3Mul(Rx, camPos);
-            //camPos = Mat3Vec3Mul(Ry, camPos);
-            SetUpCamera();
-        }
-        else {
-            tankViewMatrix *= tankViewMatrix.RotationY(D2R(2.0f) * directionX);
-            //tankViewMatrix *= Ry;
-            tankMv = tankViewMatrix * tankModelMatrix;
-            tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
-            tankMn = tankMv.GetSubMatrix3();
-            tankMn.Invert();
-            tankMn.Transpose();
-
-            waterViewMatrix *= waterViewMatrix.RotationY(D2R(2.0f) * directionX);
+        if (glutGetModifiers() == GLUT_ACTIVE_ALT)
+        {
+            environmentViewMatrix *= environmentViewMatrix.RotationY(D2R(2.0f) * directionX);
             //waterViewMatrix *= Ry;
-            waterMv = waterViewMatrix * waterModelMatrix;
-            waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
-            waterMn = waterMv.GetSubMatrix3();
-            waterMn.Invert();
-            waterMn.Transpose();
+            environmentMv = waterViewMatrix * environmentModelMatrix;
+            environmentMvp = environmentProjMatrix * environmentViewMatrix * environmentModelMatrix;
+            waterMn = environmentMv.GetSubMatrix3();
+            environmentMn.Invert();
+            environmentMn.Transpose();
+        }
+        else
+        {
+            if (ctrlDown) {
+                camPos = Mat3Vec3Mul(Rx, camPos);
+                //camPos = Mat3Vec3Mul(Ry, camPos);
+                SetUpCamera();
+            }
+            else
+            {
+                tankViewMatrix *= tankViewMatrix.RotationY(D2R(2.0f) * directionX);
+                //tankViewMatrix *= Ry;
+                tankMv = tankViewMatrix * tankModelMatrix;
+                tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
+                tankMn = tankMv.GetSubMatrix3();
+                tankMn.Invert();
+                tankMn.Transpose();
+
+                waterViewMatrix *= waterViewMatrix.RotationY(D2R(2.0f) * directionX);
+                //waterViewMatrix *= Ry;
+                waterMv = waterViewMatrix * waterModelMatrix;
+                waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+                waterMn = waterMv.GetSubMatrix3();
+                waterMn.Invert();
+                waterMn.Transpose();
+            }
         }
     }
     
@@ -306,6 +322,12 @@ void drag(int x, int y) {
     waterProg["mv"] = waterMv;
     waterProg["mn"] = waterMn;
     //waterProg["light"] = light;
+
+    glUseProgram(environmentProg.GetID());
+    environmentProg["mvp"] = environmentMvp;
+    environmentProg["mv"] = environmentMv;
+    environmentProg["mn"] = environmentMn;
+
     oldX = x;
     oldY = y;
 }
@@ -636,7 +658,8 @@ static void InitPrograms()
     waterProg["mv"] = waterMv;
     waterProg["mn"] = waterMn;
     waterProg["light"] = light;
-    waterProg["layer"] = 1.0f;
+    waterProg["layer"] = 20.0f;
+    waterProg["cameraPos"] = camPos;
 
     glGenVertexArrays(1, &waterVertexArrayObject);
     glBindVertexArray(waterVertexArrayObject);
