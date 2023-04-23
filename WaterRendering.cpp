@@ -10,6 +10,8 @@
 #include <vector>
 #include <lodepng/lodepng.h>
 #include <lodepng/lodepng.cpp>
+// Xuyen Nguyen
+// Devin White
 
 float viewHeight = 540;
 float viewWidth = 960;
