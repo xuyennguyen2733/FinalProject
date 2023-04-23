@@ -39,9 +39,13 @@ float thickness;
 // Texture attributes
 std::vector<unsigned char> tankTexture;
 std::vector<unsigned char> waterTexture;
-unsigned tankTexWidth, tankTexHeight, waterTexWidth, waterTexHeight;
+std::vector<unsigned char> waterNormalTex;
+std::vector<unsigned char> waterDepthTex;
+unsigned tankTexWidth, tankTexHeight, waterTexWidth, waterTexHeight, waterNormalWidth, waterNormalHeight, waterDepthWidth, waterDepthHeight;
 std::string tankTexName;
 std::string waterTexName;
+std::string waterNormalName;
+std::string waterDepthName;
 
 // Camera
 cy::Vec3f camPos = cy::Vec3f(0.0f, 20.0f, 30.0f);
@@ -107,6 +111,8 @@ float centerY = viewHeight / 2;
 int mouseButton = 0;
 int state = 0;
 bool ctrlDown = false;
+float layers = 1.0f;
+bool hasDispMap = true;
 
 int main(int argc, char** argv);
 
@@ -191,12 +197,16 @@ void specialKeypress(int key, int x, int y) {
         //do something here
         break;
     case GLUT_KEY_LEFT:
-        
+        if (layers > 1) layers--;
         break;
     case GLUT_KEY_RIGHT:
-        
+        if (layers < 64) layers++;
         //do something here
         break;
+    }
+    if (hasDispMap) {
+        glUseProgram(waterProg.GetID());
+        waterProg["layer"] = layers;
     }
 }
 
@@ -276,9 +286,9 @@ void drag(int x, int y)
         directionX = (x - oldX) * 0.1;
 
         float rotAngleX = (directionX * D2R(2.0f));
-        //float rotAngleY = (directionY * D2R(2.0f));
+        float rotAngleY = (directionY * D2R(2.0f));
         cy::Matrix3f Rx = cy::Matrix3f::RotationY(rotAngleX);
-        //cy::Matrix3f Ry = cy::Matrix3f::RotationX(rotAngleY);
+        cy::Matrix3f Ry = cy::Matrix3f::RotationX(rotAngleY);
         if (glutGetModifiers() == GLUT_ACTIVE_ALT)
         {
             environmentViewMatrix *= environmentViewMatrix.RotationY(D2R(2.0f) * directionX);
@@ -606,7 +616,7 @@ static void SetUpCamera()
 static void InitPrograms() 
 {
     //Environment Map
-    environmentProg.BuildFiles("env_vert.txt", "env_frag.txt");
+    environmentProg.BuildFiles("shaders/env_vert.txt", "shaders/env_frag.txt");
     environmentProg["mvp"] = environmentMvp;
     environmentProg.Bind();
     glGenVertexArrays(1, &environmentVertexArrayObject);
@@ -620,7 +630,7 @@ static void InitPrograms()
     environmentProg.SetAttribBuffer("pos", environmentBuffer, 3);
 
     // water tank
-    tankProg.BuildFiles("tank_vert.txt", "tank_frag.txt");
+    tankProg.BuildFiles("shaders/tank_vert.txt", "shaders/tank_frag.txt");
     tankProg.Bind();
     tankProg["mvp"] = tankMvp;
     tankProg["mv"] = tankMv;
@@ -664,13 +674,13 @@ static void InitPrograms()
     tankProg.SetAttribBuffer("norm", tankNormBuffer, 3);
 
     // water surface
-    waterProg.BuildFiles("water_vert1.txt", "water_frag1.txt", NULL, "water_tessCtrl1.txt", "water_tessEval1.txt");
+    waterProg.BuildFiles("shaders/water_vert.txt", "shaders/water_frag.txt", NULL, "shaders/water_tessCtrl.txt", "shaders/water_tessEval.txt");
     waterProg.Bind();
     waterProg["mvp"] = waterMvp;
     waterProg["mv"] = waterMv;
     waterProg["mn"] = waterMn;
     waterProg["light"] = light;
-    waterProg["layer"] = 20.0f;
+    waterProg["layer"] = layers;
     waterProg["cameraPos"] = camPos;
     waterProg["modelMatrix"] = waterRefModelMatrix;
 
@@ -741,8 +751,15 @@ static void LoadTextures()
 
     glUseProgram(waterProg.GetID());
     glActiveTexture(GL_TEXTURE1);
-    waterTexName = "./water/water1_texture.png";
+    waterTexName = "./water/water3_texture.png";
+    waterNormalName = "./water/water3_normal.png";
+    waterDepthName = "./water/water3_depth.png";
+    waterTexWidth = viewWidth * 2.0f;
+    waterTexHeight = viewHeight * 2.0f;
     textureLoaded = lodepng::decode(waterTexture, waterTexWidth, waterTexHeight, waterTexName);
+    textureLoaded = lodepng::decode(waterNormalTex, waterNormalWidth, waterNormalHeight, waterNormalName);
+    textureLoaded = lodepng::decode(waterDepthTex, waterDepthWidth, waterDepthHeight, waterDepthName);
+    
     glGenTextures(1, &waterTexID);
     glBindTexture(GL_TEXTURE_2D, waterTexID);
     glTexImage2D(
@@ -756,11 +773,49 @@ static void LoadTextures()
         GL_UNSIGNED_BYTE,
         &waterTexture[0]
     );
-    GLint waterSampler = glGetUniformLocation(waterProg.GetID(), "waterTexID");
+    glGenerateMipmap(GL_TEXTURE_2D);
+    GLuint waterSampler = glGetUniformLocation(waterProg.GetID(), "waterTexID");
     glUniform1i(waterSampler, 1);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    
     glBindTexture(GL_TEXTURE_2D, waterTexID);
+
+    glGenTextures(1, &waterNormalMap);
+    glBindTexture(GL_TEXTURE_2D, waterNormalMap);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        waterNormalWidth,
+        waterNormalHeight,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        &waterNormalTex[0]
+    ); 
+    glGenerateMipmap(GL_TEXTURE_2D);
+    waterSampler = glGetUniformLocation(waterProg.GetID(), "normalMap");
+    glUniform1i(waterSampler, 1);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, waterNormalMap);
+    glActiveTexture(GL_TEXTURE2);
+    glGenTextures(1, &waterDepthMap);
+    glBindTexture(GL_TEXTURE_2D, waterDepthMap);
+    glTexImage2D(
+        GL_TEXTURE_2D,
+        0,
+        GL_RGBA,
+        waterDepthWidth,
+        waterDepthHeight,
+        0,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        &waterDepthTex[0]
+    );
+    glGenerateMipmap(GL_TEXTURE_2D);
+    waterSampler = glGetUniformLocation(waterProg.GetID(), "depthMap");
+    glUniform1i(waterSampler, 2);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture(GL_TEXTURE_2D, waterDepthMap);
 
 }
 

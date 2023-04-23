@@ -3,6 +3,7 @@
 layout(location=0) out vec4 color;
 
 uniform sampler2D waterTexID;
+uniform sampler2D normalMap;
 uniform samplerCube cubemap;
 uniform vec3 cameraPos;
 uniform mat4 modelMatrix;
@@ -25,18 +26,19 @@ void main()
 
 	vec4 I = vec4(1.0,1.0,1.0,1.0);
 	vec3 l = normalize(lightDir);
-	vec3 n = normalize(matrixNormal * norms);
+	vec3 plane_n = normalize(matrixNormal * norms);
+	vec3 n = normalize(matrixNormal*((texture(normalMap, texCoord).xyz * 2.0f - 1.0f)));
 	vec3 v = -normalize(vec3(view));
 	vec3 h = normalize(l+v);
 
-	vec3 refl = reflect(incident,n);
-	vec3 refr = refract(v,n, ratio);
+	vec3 refl = reflect(incident,plane_n);
+	vec3 refr = refract(v,plane_n, ratio);
 
 	float theta = max(dot(l,n),0.0);
 	float phi = pow(max(dot(n,h),0.0),shininess);
 
-	vec4 Kd = vec4(0.0,0.0,1.0,0.5);
-	vec4 Ks = vec4(0.5,0.5,0.75,1.0);
+	vec4 Kd = vec4(0.0,0.0,1.0,1.0);
+	vec4 Ks = vec4(1.0,1.0,1.0,1.0);
 
 	vec4 ambient = texture(waterTexID, texCoord) * 0.8;
 	vec4 specular = Ks * phi;
@@ -46,7 +48,7 @@ void main()
 	//color = vec4(0,0,1,1) + ambient;
 	//color = vec4(0,0,1,1) + texture(cubemap, -worldRefl) + texture(cubemap,refr);
 
-	//color = vec4(0,0,1,1) + (vec4(vec3(texture(cubemap, refl)),1.0) * 0.4);
-	//color = specular + diffuse + ambient;
-	color = texture(waterTexID, texCoord);
+	//color = texture(waterTexID, texCoord)*0.5 + texture(cubemap, -refl) * 0.4;
+	color = specular + diffuse;
+	//color = texture(waterTexID, texCoord);
 }
