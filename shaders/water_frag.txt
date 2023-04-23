@@ -37,8 +37,8 @@ void main()
 	float theta = max(dot(l,n),0.0);
 	float phi = pow(max(dot(n,h),0.0),shininess);
 
-	vec4 Kd = vec4(0.0,0.0,1.0,1.0);
-	vec4 Ks = vec4(1.0,1.0,1.0,1.0);
+	vec4 Kd = texture(waterTexID,texCoord);
+	vec4 Ks = texture(waterTexID,texCoord);
 
 	vec4 ambient = texture(waterTexID, texCoord) * 0.8;
 	vec4 specular = Ks * phi;
@@ -48,7 +48,7 @@ void main()
 	//color = vec4(0,0,1,1) + ambient;
 	//color = vec4(0,0,1,1) + texture(cubemap, -worldRefl) + texture(cubemap,refr);
 
-	//color = texture(waterTexID, texCoord)*0.5 + texture(cubemap, -refl) * 0.4;
-	color = specular + diffuse;
+	color = texture(waterTexID, texCoord)*0.5 + texture(cubemap, refl) * 0.4;
+	//color = specular + diffuse;
 	//color = texture(waterTexID, texCoord);
 }

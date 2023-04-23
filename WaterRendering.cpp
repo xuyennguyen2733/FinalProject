@@ -36,6 +36,11 @@ float width;
 float length;
 float thickness;
 
+// wave attributes
+int timer = 0;
+float theta = 0.0f; //between 0 and 360
+int increment = 1; // 1 or -1
+
 // Texture attributes
 std::vector<unsigned char> tankTexture;
 std::vector<unsigned char> waterTexture;
@@ -111,7 +116,7 @@ float centerY = viewHeight / 2;
 int mouseButton = 0;
 int state = 0;
 bool ctrlDown = false;
-float layers = 1.0f;
+float layers = 64.0f;
 bool hasDispMap = true;
 
 int main(int argc, char** argv);
@@ -130,7 +135,27 @@ static void LoadMeshes();
 static cy::Vec3f CalcNorm(cy::Vec3f normAt, cy::Vec3f dir1, cy::Vec3f dir2);
 
 
-void display() {
+void display() 
+{
+    if (timer % 50 == 0)
+    {
+        if (theta < 60)
+        {
+            increment = 1;
+        }
+        else if (theta > 120)
+        {
+            increment = -1;
+        }
+        theta += increment;
+        glUseProgram(waterProg.GetID());
+        waterProg["sinTheta"] = cos(theta);
+    }
+    if (timer > 200)
+    {
+        timer = 0;
+    }
+    timer++;
     //// Clear the viewport
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDepthMask(GL_FALSE);
@@ -750,6 +775,7 @@ static void LoadTextures()
     glBindTexture(GL_TEXTURE_2D, tankTexID);
 
     glUseProgram(waterProg.GetID());
+
     glActiveTexture(GL_TEXTURE1);
     waterTexName = "./water/water3_texture.png";
     waterNormalName = "./water/water3_normal.png";
@@ -779,6 +805,7 @@ static void LoadTextures()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, waterTexID);
 
+    glActiveTexture(GL_TEXTURE2);
     glGenTextures(1, &waterNormalMap);
     glBindTexture(GL_TEXTURE_2D, waterNormalMap);
     glTexImage2D(
@@ -794,10 +821,11 @@ static void LoadTextures()
     ); 
     glGenerateMipmap(GL_TEXTURE_2D);
     waterSampler = glGetUniformLocation(waterProg.GetID(), "normalMap");
-    glUniform1i(waterSampler, 1);
+    glUniform1i(waterSampler, 2);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, waterNormalMap);
-    glActiveTexture(GL_TEXTURE2);
+
+    glActiveTexture(GL_TEXTURE3);
     glGenTextures(1, &waterDepthMap);
     glBindTexture(GL_TEXTURE_2D, waterDepthMap);
     glTexImage2D(
@@ -813,7 +841,7 @@ static void LoadTextures()
     );
     glGenerateMipmap(GL_TEXTURE_2D);
     waterSampler = glGetUniformLocation(waterProg.GetID(), "depthMap");
-    glUniform1i(waterSampler, 2);
+    glUniform1i(waterSampler, 3);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, waterDepthMap);
 

@@ -2,6 +2,7 @@
 
 layout(quads, equal_spacing, ccw) in;
 uniform sampler2D depthMap;
+uniform float sinTheta;
 
 in vec3 norm[];
 in vec2 txc[];
@@ -64,7 +65,12 @@ void main()
     vec3 outNorm = leftNorm + u * (rightNorm - leftNorm);
 
     float displacement = texture(depthMap, tex).r;
-    pos.y += displacement*5.0f;
+    if(displacement < 0.355)
+    {
+        displacement = 0;
+    }
+    displacement *= sinTheta;
+    pos.y += displacement*1.0f;
     gl_Position = pos;
     //gl_Position = interpolate(gl_in[0].gl_Position, gl_in[1].gl_Position,gl_in[2].gl_Position,gl_in[3].gl_Position);
 
