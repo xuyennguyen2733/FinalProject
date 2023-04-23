@@ -53,6 +53,8 @@ std::string tankTexName;
 std::string waterTexName;
 std::string waterNormalName;
 std::string waterDepthName;
+float texCoordDisp = 0.0f; // displacement of texture mapping
+float waveScale = 0.0f; // degrees at which the water changes
 
 // Camera
 cy::Vec3f camPos = cy::Vec3f(0.0f, 20.0f, 30.0f);
@@ -123,7 +125,7 @@ bool hasDispMap = true;
 
 int main(int argc, char** argv);
 
-static double D2R(int degrees);
+static float D2R(int degrees);
 static cy::Vec3f Mat3Vec3Mul(cy::Matrix3f m, cy::Vec3f v);
 static void SetUpWaterTank(float width, float length, float height, float thickness);
 static void SetUpWaterSurface(float width, float length, float height);
@@ -139,8 +141,12 @@ static cy::Vec3f CalcNorm(cy::Vec3f normAt, cy::Vec3f dir1, cy::Vec3f dir2);
 
 void display() 
 {
-    if (timer % 50 == 0)
+
+    if (timer % 250 == 0)
     {
+        glUseProgram(waterProg.GetID());
+        waterProg["texCoordDisp"] = texCoordDisp;
+        texCoordDisp++;
         if (theta < 60)
         {
             increment = 1;
@@ -149,15 +155,26 @@ void display()
         {
             increment = -1;
         }
+        if (waveScale < 90) {
+            waveScale+=1.0f;
+        }
         theta += increment;
-        glUseProgram(waterProg.GetID());
+        
         waterProg["sinTheta"] = cos(theta);
+        float scale = cos(D2R(waveScale));
+        if (scale < 1.0e-05) {
+            scale = 0.0f;
+        }
+        waterProg["waveScale"] = scale;
     }
-    if (timer > 200)
+    if (timer > 2500)
     {
-        timer = 0;
+        timer = 1;
     }
     timer++;
+    if (texCoordDisp == waterTexWidth) {
+        texCoordDisp = 0.0f;
+    }
     //// Clear the viewport
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDepthMask(GL_FALSE);
@@ -338,7 +355,7 @@ void drag(int x, int y)
             else
             {
                 tankViewMatrix *= tankViewMatrix.RotationY(D2R(2.0f) * directionX);
-                //tankViewMatrix *= Ry;
+                tankViewMatrix *= Ry;
                 tankMv = tankViewMatrix * tankModelMatrix;
                 tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
                 tankMn = tankMv.GetSubMatrix3();
@@ -346,7 +363,7 @@ void drag(int x, int y)
                 tankMn.Transpose();
 
                 waterViewMatrix *= waterViewMatrix.RotationY(D2R(2.0f) * directionX);
-                //waterViewMatrix *= Ry;
+                waterViewMatrix *= Ry;
                 waterMv = waterViewMatrix * waterModelMatrix;
                 waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
                 waterMn = waterMv.GetSubMatrix3();
@@ -450,9 +467,9 @@ int main(int argc, char** argv) {
     return 0;
 }
 
-static double D2R(int degrees) 
+static float D2R(int degrees) 
 {
-    return (degrees * M_PI) / 180;
+    return (degrees * M_PI) / 180.0f;
 }
 
 static cy::Vec3f Mat3Vec3Mul(cy::Matrix3f m, cy::Vec3f v) {
