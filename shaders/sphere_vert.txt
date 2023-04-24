@@ -8,6 +8,9 @@ uniform mat4 mvp;
 uniform mat4 mv;
 uniform mat3 mn;
 uniform vec3 light;
+uniform float texCoordDisp;
+uniform float sinTheta;
+uniform float waveScale;
 uniform sampler2D depthMap;
 
 out vec3 norms;
@@ -19,9 +22,21 @@ out vec4 view;
 
 void main()
 {
-	gl_Position = mvp * vec4(pos,1);
+	vec4 worldPos = mvp * vec4(pos,1);
+	vec2 tex = txc;
+	tex -= texCoordDisp*0.01;
+	float displacement = texture(depthMap, tex).r;
+  if(displacement < 0.355)
+  {
+     displacement = 0;
+  }
+  //displacement *= sinTheta;
+	vec3 n = normalize(mn*norm);
+	//n *= displacement;
+  //worldPos += vec4(n,0);
+	gl_Position = worldPos;
 	position = pos;
-	texCoord = txc;
+	texCoord = tex;
 	lightDir = light;
 	matn = mn;
 	norms = norm;

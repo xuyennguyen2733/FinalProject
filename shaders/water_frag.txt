@@ -60,5 +60,5 @@ void main()
 	//color = vec4(0,0,1,1) + texture(cubemap, -worldRefl) + texture(cubemap,refr);
 
 	//color =  diffuse + specular + texture(text,oldTexCoord) * 1 + texture(cubemap, refl) * 0.6 ;
-	color = diffuse + specular + texture(text,vec2(ndc));
+	color = diffuse + specular + texture(text,vec2(ndc))*0.5;
 }
