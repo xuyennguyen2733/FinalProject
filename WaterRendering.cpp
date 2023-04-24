@@ -399,6 +399,7 @@ void drag(int x, int y)
     waterProg["mn"] = waterMn;
     waterProg["cameraPos"] = camPos;
     waterProg["modelMatrix"] = waterRefModelMatrix;
+    waterProg["texCoordMvp"] = waterMvp;
     //waterProg["light"] = light;
 
     glUseProgram(environmentProg.GetID());
@@ -747,6 +748,7 @@ static void InitPrograms()
     waterProg["layer"] = layers;
     waterProg["cameraPos"] = camPos;
     waterProg["modelMatrix"] = waterRefModelMatrix;
+    waterProg["texCoordMvp"] = waterMvp;
 
     glGenVertexArrays(1, &waterVertexArrayObject);
     glBindVertexArray(waterVertexArrayObject);
