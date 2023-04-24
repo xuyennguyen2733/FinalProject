@@ -13,6 +13,7 @@ in mat3 mn[];
 
 out vec3 norms;
 out vec2 texCoord;
+out vec2 oldTexCoord;
 out vec3 view;
 out mat3 matrixNormal;
 out vec3 position;
@@ -47,6 +48,8 @@ void main()
     vec2 leftTex = tex3 + v * (tex2 - tex3);
     vec2 rightTex = tex0 + v * (tex1 - tex0);
     vec2 tex = leftTex + u * (rightTex - leftTex);
+
+    oldTexCoord = tex;
 
     vec3 w0 = worldView[0];
     vec3 w1 = worldView[1];

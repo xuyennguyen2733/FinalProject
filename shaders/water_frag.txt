@@ -5,11 +5,13 @@ layout(location=0) out vec4 color;
 uniform sampler2D waterTexID;
 uniform sampler2D normalMap;
 uniform samplerCube cubemap;
+uniform sampler2D text;
 uniform vec3 cameraPos;
 uniform mat4 modelMatrix;
 uniform vec3 light;
 
 in vec2 texCoord;
+in vec2 oldTexCoord;
 in vec3 norms;
 in vec3 view;
 in mat3 matrixNormal;
@@ -51,7 +53,6 @@ void main()
 	//color = vec4(0,0,1,1) + ambient;
 	//color = vec4(0,0,1,1) + texture(cubemap, -worldRefl) + texture(cubemap,refr);
 
-	color =  diffuse + specular + texture(cubemap, refl) * 0.6;
-	//color = specular + diffuse;
-	//color = texture(waterTexID, texCoord);
+	//color =  diffuse + specular + texture(text,oldTexCoord) * 1 + texture(cubemap, refl) * 0.6 ;
+	color = diffuse + specular + texture(text,oldTexCoord) * 1;
 }

@@ -71,6 +71,8 @@ cy::GLSLProgram environmentProg;
 //  environment Map
 cy::GLTextureCubeMap envmap;
 
+cy::GLRenderTexture2D renderBuffer;
+
 // Matrices
 cy::Matrix4f tankViewMatrix;
 cy::Matrix4f tankProjMatrix;
@@ -137,11 +139,23 @@ static void InitPrograms();
 static void LoadTextures();
 static void LoadMeshes();
 static cy::Vec3f CalcNorm(cy::Vec3f normAt, cy::Vec3f dir1, cy::Vec3f dir2);
-
+void initRenderBuffer();
 
 void display() 
 {
-
+    glDepthMask(GL_FALSE);
+    DrawEnvironment();
+    glDepthMask(GL_TRUE);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    renderBuffer.Bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glUseProgram(tankProg.GetID());
+    DrawTank();
+    renderBuffer.Unbind();
+    renderBuffer.BuildTextureMipmaps();
+    // Clear the viewport
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (timer % 250 == 0)
     {
         glUseProgram(waterProg.GetID());
@@ -175,17 +189,17 @@ void display()
     if (texCoordDisp == waterTexWidth) {
         texCoordDisp = 0.0f;
     }
-    //// Clear the viewport
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glDepthMask(GL_FALSE);
-    DrawEnvironment();
-    glDepthMask(GL_TRUE);
+    glActiveTexture(GL_TEXTURE4);
+    waterProg.Bind();
+    GLuint sampler = glGetUniformLocation(waterProg.GetID(), "text");
+    glUniform1i(sampler, 4);
+    glBindVertexArray(waterVertexArrayObject);
+    glDrawArrays(GL_PATCHES, 0, 4);
+    //DrawWater();
 
     // glEnable(GL_LIGHTING);
     glEnable(GL_DEPTH_TEST);
-
     DrawTank();
-    DrawWater();
 
     // Swap buffers
         /**
@@ -460,7 +474,7 @@ int main(int argc, char** argv) {
     SetUpCamera();
     InitPrograms();
     LoadTextures();
-
+    initRenderBuffer();
     // Call main loop
     glutMainLoop();
 
@@ -542,10 +556,16 @@ static void LoadMeshes()
     waterPlaneNorm.push_back(cy::Vec3f(0, 1, 0));
 
     // texCoords
-    waterPlaneTexCoord.push_back(cy::Vec2f(0.358830988, 0.692068994));
-    waterPlaneTexCoord.push_back(cy::Vec2f(0.358830988, 0.309625000));
-    waterPlaneTexCoord.push_back(cy::Vec2f(0.639760017, 0.309625000));
-    waterPlaneTexCoord.push_back(cy::Vec2f(0.639760017, 0.692068994));
+    waterPlaneTexCoord.push_back(cy::Vec2f(0.358830988 - 0.3, 0.309625000 - 0.3)); // bottom left
+    waterPlaneTexCoord.push_back(cy::Vec2f(0.639760017 + 0.3, 0.309625000 - 0.3)); // bottom right
+    waterPlaneTexCoord.push_back(cy::Vec2f(0.639760017 + 0.3, 0.692068994 + 0.3)); // top right
+    waterPlaneTexCoord.push_back(cy::Vec2f(0.358830988 - 0.3, 0.692068994 + 0.3)); //top left
+
+    /*waterPlaneTexCoord.push_back(cy::Vec2f(0, 0));
+    waterPlaneTexCoord.push_back(cy::Vec2f(0,1));
+    waterPlaneTexCoord.push_back(cy::Vec2f(1,1));
+    waterPlaneTexCoord.push_back(cy::Vec2f(1,0));*/
+
 
     // Environment Mapping
     cy::TriMesh environmentMesh;
@@ -871,6 +891,18 @@ static cy::Vec3f CalcNorm(cy::Vec3f normAt, cy::Vec3f dir1, cy::Vec3f dir2) {
     cy::Vec3f norm = (dir1 - normAt).Cross(dir2 - normAt);
     norm.Normalize();
     return norm;
+}
+
+void initRenderBuffer()
+{
+    if (!renderBuffer.Initialize(true, //create depth buffer
+        3, //RGB
+        1920 * 2, //texture width
+        1080 * 2 //texture height
+    ))
+    {
+        printf("Problem initializing\n");
+    }
 }
 
 static void SetUpWaterTank(float width, float length, float height, float thickness) {
