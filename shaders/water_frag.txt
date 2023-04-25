@@ -10,6 +10,7 @@ uniform vec3 cameraPos;
 uniform mat4 modelMatrix;
 uniform vec3 light;
 uniform mat4 texCoordMvp;
+uniform mat4 lightMatrix;
 
 in vec2 texCoord;
 in vec2 oldTexCoord;
@@ -21,9 +22,11 @@ vec3 lightDir = light;
 
 void main() 
 {
+	vec3 lightPosition = vec3(lightMatrix) * lightDir;
 	vec3 worldVertexPosition = vec3(modelMatrix * position);
 	vec3 incident = -normalize(worldVertexPosition);
 	vec2 ndc = position.xy/position.w;
+
 	ndc *= 0.5;
 	ndc.x += 0.5f;
 	ndc.y += 0.5f;
@@ -33,7 +36,7 @@ void main()
 	float ratio = 1.00 / 1.52;
 
 	vec4 I = vec4(1.0,1.0,1.0,1.0);
-	vec3 l = normalize(lightDir);
+	vec3 l = normalize(lightPosition);
 	vec3 plane_n = normalize(matrixNormal * norms);
 	//vec3 n = normalize(matrixNormal*((texture(normalMap, texCoord).xyz * 2.0f - 1.0f)));
 	vec3 n = normalize(matrixNormal * norms);
@@ -41,7 +44,7 @@ void main()
 	vec3 h = normalize(l+v);
 
 	vec3 refl = reflect(incident,plane_n);
-	vec3 refr = refract(v,plane_n, ratio);
+	vec3 refr = refract(incident,plane_n, ratio);
 
 	float theta = max(dot(l,n),0.0);
 	float phi = pow(max(dot(n,h),0.0),shininess);
@@ -55,10 +58,6 @@ void main()
 	vec4 specular = Ks * phi;
 	vec4 diffuse = Kd * theta;
 
-	//color = (diffuse + ambient) * texture(cubemap,ref) + specular;
-	//color = vec4(0,0,1,1) + ambient;
-	//color = vec4(0,0,1,1) + texture(cubemap, -worldRefl) + texture(cubemap,refr);
-
 	//color =  diffuse + specular + texture(text,oldTexCoord) * 1 + texture(cubemap, refl) * 0.6 ;
-	color = diffuse + specular + texture(text,vec2(ndc))*0.5;
+	color = diffuse + specular + texture(text,vec2(ndc))*0.5 + texture(cubemap, refl) * 0.05 ;
 }

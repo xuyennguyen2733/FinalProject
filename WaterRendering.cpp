@@ -88,6 +88,7 @@ cy::GLRenderTexture2D renderBuffer;
 cy::Matrix4f sphereViewMatrix;
 cy::Matrix4f sphereProjMatrix;
 cy::Matrix4f sphereModelMatrix;
+cy::Matrix4f sphereRefModelMatrix;
 cy::Matrix4f sphereMvp;
 cy::Matrix4f sphereMv;
 cy::Matrix3f sphereMn;
@@ -110,6 +111,7 @@ cy::Matrix4f environmentModelMatrix;
 cy::Matrix4f environmentMvp;
 cy::Matrix4f environmentMv;
 cy::Matrix3f environmentMn;
+cy::Matrix4f lightMatrix;
 
 // Buffers
 GLuint sphereFaceBuffer;
@@ -212,11 +214,10 @@ void display()
     if (texCoordDisp == waterTexWidth) {
         texCoordDisp = 0.0f;
     }
-
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glDepthMask(GL_FALSE);
     DrawEnvironment();
     glDepthMask(GL_TRUE);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     switch (currentScene) {
     case tankScene:
         renderBuffer.Bind();
@@ -227,7 +228,7 @@ void display()
         renderBuffer.Unbind();
         renderBuffer.BuildTextureMipmaps();
         // Clear the viewport
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         // glEnable(GL_LIGHTING);
         glEnable(GL_DEPTH_TEST);
         DrawWater();
@@ -340,8 +341,10 @@ void drag(int x, int y)
     if (mouseButton == GLUT_RIGHT_BUTTON && inViewPort) 
     {
         bool towardCenter = (x <= oldX && x > centerX) || (x >= oldX && x < centerX);
-            if (towardCenter) {
-                if (ctrlDown) {
+            if (towardCenter) 
+            {
+                if (ctrlDown) 
+                {
                     camPos *= 1.02;
                     SetUpCamera();
                 }
@@ -359,8 +362,8 @@ void drag(int x, int y)
                     waterMn = waterMv.GetSubMatrix3();
                     waterMn.Invert();
                     waterMn.Transpose();
+
                 }
-                //
 
             }
             else
@@ -370,7 +373,8 @@ void drag(int x, int y)
                     camPos *= 0.98;
                     SetUpCamera();
                 }
-                else {
+                else 
+                {
                     tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
                     tankMv = tankViewMatrix * tankModelMatrix;
                     tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
@@ -384,6 +388,7 @@ void drag(int x, int y)
                     waterMn = waterMv.GetSubMatrix3();
                     waterMn.Invert();
                     waterMn.Transpose();
+
                 }
             }
     }
@@ -414,10 +419,16 @@ void drag(int x, int y)
             environmentMn.Transpose();
 
             waterRefModelMatrix *= waterRefModelMatrix.RotationZ(D2R(2.0f) * directionX);
+            sphereRefModelMatrix *= sphereModelMatrix.RotationY(D2R(2.0f) * directionX);
+        }
+        else if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
+        {
+            lightMatrix *= lightMatrix.RotationY(D2R(-2.0f) * directionX);
         }
         else
         {
-            if (ctrlDown) {
+            if (ctrlDown) 
+            {
                 camPos = Mat3Vec3Mul(Rx, camPos);
                 //camPos = Mat3Vec3Mul(Ry, camPos);
                 SetUpCamera();
@@ -447,13 +458,16 @@ void drag(int x, int y)
     sphereProg["mvp"] = tankMvp;
     sphereProg["mv"] = tankMv;
     sphereProg["mn"] = tankMn;
-    //waterProg["light"] = light;
+    //sphereProg["light"] = light;
+    sphereProg["lightMatrix"] = lightMatrix;
+    sphereProg["modelMatrix"] = sphereRefModelMatrix;
     
     glUseProgram(tankProg.GetID());
     tankProg["mvp"] = tankMvp;
     tankProg["mv"] = tankMv;
     tankProg["mn"] = tankMn;
     //tankProg["light"] = light;
+    tankProg["lightMatrix"] = lightMatrix;
 
     glUseProgram(waterProg.GetID());
     waterProg["mvp"] = waterMvp;
@@ -463,6 +477,7 @@ void drag(int x, int y)
     waterProg["modelMatrix"] = waterRefModelMatrix;
     waterProg["texCoordMvp"] = waterMvp;
     //waterProg["light"] = light;
+    waterProg["lightMatrix"] = lightMatrix;
 
     glUseProgram(environmentProg.GetID());
     environmentProg["mvp"] = environmentMvp;
@@ -568,9 +583,12 @@ static void LoadMeshes()
     bool success = sphereMesh.LoadFromFileObj("./sphere.obj");
     sphereMesh.ComputeBoundingBox();
     sphereMesh.ComputeNormals();
-    sphere.reserve(sphereMesh.NF());
-    sphereTexCoord.reserve(sphereMesh.NF());
-    sphereNormCoord.reserve(sphereMesh.NF());
+
+    unsigned int reserveAmount = sphereMesh.NF() * 3;
+    sphere.reserve(reserveAmount);
+    sphereTexCoord.reserve(reserveAmount);
+    sphereNormCoord.reserve(reserveAmount);
+
     for (unsigned int i = 0; i < sphereMesh.NF(); i++) {
         sphere.push_back(sphereMesh.V(sphereMesh.F(i).v[0]));
         sphere.push_back(sphereMesh.V(sphereMesh.F(i).v[1]));
@@ -698,8 +716,7 @@ static void LoadMeshes()
     }    //set image data
     envmap.BuildMipmaps();
     envmap.SetSeamless();
-    envmap.Bind(0);
-
+    envmap.Bind(6);
 }
 
 static void SetUpWaterSurface(float width, float length, float height) 
@@ -744,7 +761,6 @@ static void SetUpCamera()
     sphereMv = tankMv;
     sphereMn = tankMn;
 
-
     // water surface
     waterViewMatrix = cy::Matrix4f::View(camPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
     waterProjMatrix = cy::Matrix4f::Perspective(D2R(60.0f), viewWidth / viewHeight, 0.1f, 1000.0f);
@@ -759,8 +775,8 @@ static void SetUpCamera()
 
     // Environment Map
 
-    cy::Vec3f camPos2 = cy::Vec3f(0.0f, 0.0f, 10.0f);
-    environmentViewMatrix = cy::Matrix4f::View(camPos2, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
+    cy::Vec3f envCamPos = cy::Vec3f(0.0f, 0.0f, 10.0f);
+    environmentViewMatrix = cy::Matrix4f::View(envCamPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
     environmentProjMatrix = cy::Matrix4f::Perspective(D2R(60.0f), viewWidth / viewHeight, 0.1f, 1000.0f);
     environmentModelMatrix = cy::Matrix4f::RotationZ(D2R(0.0f));
     environmentMvp = environmentProjMatrix * environmentViewMatrix * environmentModelMatrix;
@@ -768,6 +784,13 @@ static void SetUpCamera()
     environmentMn = environmentMv.GetSubMatrix3();
     environmentMn.Invert();
     environmentMn.Transpose();
+
+    sphereModelMatrix = environmentModelMatrix;
+    sphereRefModelMatrix = sphereModelMatrix;
+
+    // light matrix
+    lightMatrix = cy::Matrix4f::View(light, cy::Vec3f(0.0f, 5.0f, 0.0f), cy::Vec3f(0.0f, 1.0f, 0.0f));
+
 }
 
 static void InitPrograms() 
@@ -793,6 +816,8 @@ static void InitPrograms()
     sphereProg["mv"] = sphereMv;
     sphereProg["mn"] = sphereMn;
     sphereProg["light"] = light;
+    sphereProg["lightMatrix"] = lightMatrix;
+    sphereProg["modelMatrix"] = sphereRefModelMatrix;
 
     glGenVertexArrays(1, &sphereVertexArrayObject);
     glBindVertexArray(sphereVertexArrayObject);
@@ -837,6 +862,7 @@ static void InitPrograms()
     tankProg["mv"] = tankMv;
     tankProg["mn"] = tankMn;
     tankProg["light"] = light;
+    tankProg["lightMatrix"] = lightMatrix;
 
     glGenVertexArrays(1, &tankVertexArrayObject);
     glBindVertexArray(tankVertexArrayObject);
@@ -885,6 +911,7 @@ static void InitPrograms()
     waterProg["cameraPos"] = camPos;
     waterProg["modelMatrix"] = waterRefModelMatrix;
     waterProg["texCoordMvp"] = waterMvp;
+    waterProg["lightMatrix"] = lightMatrix;
 
     glGenVertexArrays(1, &waterVertexArrayObject);
     glBindVertexArray(waterVertexArrayObject);

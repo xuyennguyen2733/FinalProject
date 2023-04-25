@@ -3,8 +3,11 @@
 layout(location=0) out vec4 color;
 
 uniform sampler2D waterTexID;
+uniform mat4 lightMatrix;
+uniform mat4 modelMatrix;
+uniform samplerCube cubemap;
 
-in vec3 position;
+in vec4 position;
 in vec2 texCoord;
 in vec3 lightDir;
 in mat3 matn;
@@ -13,8 +16,13 @@ in vec4 view;
 
 void main() 
 {
+	vec3 lightPosition = vec3(lightMatrix) * lightDir;
+	vec3 worldVertexPosition = vec3(modelMatrix * position);
+	vec3 incident = -normalize(worldVertexPosition);
+	float ratio = 1.0 / 1.333;
+
 	vec4 I = vec4(1.0,1.0,1.0,1.0);
-	vec3 l = normalize(lightDir);
+	vec3 l = normalize(lightPosition);
 	vec3 n = normalize(matn * norms);
 	vec3 v = -normalize(vec3(view));
 	vec3 h = normalize(l+v);
@@ -22,12 +30,16 @@ void main()
 	float theta = max(dot(l,n),0.0);
 	float phi = pow(max(dot(n,h),0.0),10.0);
 
-	vec4 Kd = texture(waterTexID, texCoord);
+	vec3 refl = reflect(incident,n);
+	vec3 refr = refract(incident,n, ratio);
+
+	vec4 Kd = texture(waterTexID, texCoord) * 0.5;
 	vec4 Ks = vec4(0.5,0.5,0.5,1.0);
 
 	vec4 ambient = vec4(vec3(0.3,0.3,0.3) * Kd.rgb,1.0);
 	vec4 specular = Ks * phi;
 	vec4 diffuse = Kd * theta;
 
-	color = diffuse + ambient + specular;
+	//color = diffuse + ambient + specular + texture(cubemap, refr) * 0.5;
+	color = texture(cubemap, refr);
 }
