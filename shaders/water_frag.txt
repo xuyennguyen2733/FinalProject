@@ -34,7 +34,7 @@ void main()
 	ndc.y += 0.5f;
 	vec4 texTrans = modelMatrix * vec4(oldTexCoord,1,1);
 
-	float shininess = 10.0; 
+	float shininess = 2.0; 
 	float ratio = 1.00 / 1.52;
 
 	vec4 I = vec4(1.0,1.0,1.0,1.0);

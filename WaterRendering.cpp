@@ -761,6 +761,7 @@ static void SetUpCamera()
 
     // light matrix
     lightMatrix = cy::Matrix4f::View(light, cy::Vec3f(0.0f, 5.0f, 0.0f), cy::Vec3f(0.0f, 1.0f, 0.0f));
+    lightMatrix.SetRotationZ(D2R(10.0));
 
 }
 
