@@ -11,6 +11,8 @@ uniform mat4 modelMatrix;
 uniform vec3 light;
 uniform mat4 texCoordMvp;
 uniform mat4 lightMatrix;
+uniform bool isTransparent;
+uniform bool isReflective;
 
 in vec2 texCoord;
 in vec2 oldTexCoord;
@@ -59,5 +61,11 @@ void main()
 	vec4 diffuse = Kd * theta;
 
 	//color =  diffuse + specular + texture(text,oldTexCoord) * 1 + texture(cubemap, refl) * 0.6 ;
-	color = diffuse + specular + texture(text,vec2(ndc))*0.5 + texture(cubemap, refl) * 0.5 ;
+	color = diffuse + specular;
+	if (isTransparent) {
+		color += texture(text,vec2(ndc))*0.5;
+	}
+	if (isReflective) {
+		color += texture(cubemap, refl) * 0.5 ;
+	}
 }

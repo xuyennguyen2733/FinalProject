@@ -18,10 +18,6 @@ float viewWidth = 960;
 int limit = 0;
 
 // Meshes
-std::vector<cy::Vec3f> sphere;
-std::vector<cy::Vec2f> sphereTexCoord;
-std::vector<cy::Vec3f> sphereNormCoord;
-
 std::vector<cy::Vec3f> tank;
 std::vector<cy::Vec2f> tankTexCoord;
 std::vector<cy::Vec3f> tankNormCoord;
@@ -72,12 +68,11 @@ cy::Vec3f camPos = cy::Vec3f(0.0f, 10.0f, 30.0f);
 cy::Vec3f camTar = cy::Vec3f(0.0f, 0.0f, 0.0f);
 
 // Light
-cy::Vec3f light = cy::Vec3f(20.0f, 20.0f, 50.0f);
+cy::Vec3f light = cy::Vec3f(10.0f, 50.0f, 50.0f);
 
 // Programs
 cy::GLSLProgram tankProg;
 cy::GLSLProgram waterProg;
-cy::GLSLProgram sphereProg;
 cy::GLSLProgram environmentProg;
 
 //  environment Map
@@ -86,13 +81,6 @@ cy::GLTextureCubeMap envmap;
 cy::GLRenderTexture2D renderBuffer;
 
 // Matrices
-cy::Matrix4f sphereViewMatrix;
-cy::Matrix4f sphereProjMatrix;
-cy::Matrix4f sphereModelMatrix;
-cy::Matrix4f sphereRefModelMatrix;
-cy::Matrix4f sphereMvp;
-cy::Matrix4f sphereMv;
-cy::Matrix3f sphereMn;
 cy::Matrix4f tankViewMatrix;
 cy::Matrix4f tankProjMatrix;
 cy::Matrix4f tankModelMatrix;
@@ -115,9 +103,6 @@ cy::Matrix3f environmentMn;
 cy::Matrix4f lightMatrix;
 
 // Buffers
-GLuint sphereFaceBuffer;
-GLuint sphereTexBuffer;
-GLuint sphereNormBuffer;
 GLuint tankFaceBuffer;
 GLuint tankTexBuffer;
 GLuint tankNormBuffer;
@@ -127,7 +112,6 @@ GLuint waterTexBuffer;
 GLuint environmentBuffer;
 
 // Vertex Array Objects
-GLuint sphereVertexArrayObject;
 GLuint tankVertexArrayObject;
 GLuint waterVertexArrayObject;
 GLuint environmentVertexArrayObject;
@@ -150,10 +134,8 @@ int state = 0;
 bool ctrlDown = false;
 float layers = 64.0f;
 bool hasDispMap = true;
-
-// Scene statistics
-enum Scene {tankScene, sphereScene};
-Scene currentScene = tankScene;
+bool isReflective = true;
+bool isTransparent = true;
 
 int main(int argc, char** argv);
 
@@ -168,7 +150,6 @@ static void DrawWater();
 static void InitPrograms();
 static void LoadTextures();
 static void LoadMeshes();
-static void DrawSphere();
 static cy::Vec3f CalcNorm(cy::Vec3f normAt, cy::Vec3f dir1, cy::Vec3f dir2);
 void initRenderBuffer();
 
@@ -201,11 +182,6 @@ void display()
         }
         waterProg["waveScale"] = scale;
 
-        /*glUseProgram(sphereProg.GetID());
-        sphereProg["texCoordDisp"] = texCoordDisp;
-        sphereProg["sinTheta"] = cos(theta);
-        sphereProg["waveScale"] = scale;*/
-
     }
     if (timer > 2500)
     {
@@ -219,27 +195,19 @@ void display()
     glDepthMask(GL_FALSE);
     DrawEnvironment();
     glDepthMask(GL_TRUE);
-    switch (currentScene) {
-    case tankScene:
-        renderBuffer.Bind();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        glUseProgram(tankProg.GetID());
-        DrawTank();
-        renderBuffer.Unbind();
-        renderBuffer.BuildTextureMipmaps();
-        // Clear the viewport
-        //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        // glEnable(GL_LIGHTING);
-        glEnable(GL_DEPTH_TEST);
-        DrawWater();
-        DrawTank();
-        break;
-    case sphereScene:
-        //glEnable(GL_DEPTH_TEST);
-        //DrawSphere();
-        break;
-    }
+    renderBuffer.Bind();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+    glUseProgram(tankProg.GetID());
+    DrawTank();
+    renderBuffer.Unbind();
+    renderBuffer.BuildTextureMipmaps();
+    // Clear the viewport
+    //glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // glEnable(GL_LIGHTING);
+    glEnable(GL_DEPTH_TEST);
+    DrawWater();
+    DrawTank();
     
 
     // Swap buffers
@@ -268,15 +236,11 @@ static void DrawTank() {
     glDrawArrays(GL_TRIANGLES, 0, tank.size());
 }
 
-static void DrawSphere() {
-    glUseProgram(sphereProg.GetID());
-    sphereProg.Bind();
-    glBindVertexArray(sphereVertexArrayObject);
-    glDrawArrays(GL_TRIANGLES, 0, sphere.size());
-}
 
 static void DrawWater() {
     glUseProgram(waterProg.GetID());
+    waterProg["isReflective"] = isReflective;
+    waterProg["isTransparent"] = isTransparent;
     glActiveTexture(GL_TEXTURE4);
     //waterProg.Bind();
     GLuint sampler = glGetUniformLocation(waterProg.GetID(), "text");
@@ -286,17 +250,17 @@ static void DrawWater() {
 }
 
 void keypress(unsigned char key, int x, int y) {
-    // Handle keyboard input here
+    // Handle keyboard input hereopenScene
     switch (key)
     {
     case 27: //ESC
         glutLeaveMainLoop();
         break;
     case 49:
-        currentScene = tankScene;
+        isTransparent = !isTransparent;
         break;
     case 50:
-        currentScene = sphereScene;
+        isReflective = !isReflective;
         break;
     }   
 
@@ -344,10 +308,21 @@ void drag(int x, int y)
         bool towardCenter = (x <= oldX && x > centerX) || (x >= oldX && x < centerX);
             if (towardCenter) 
             {
-                if (ctrlDown) 
+                if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
                 {
-                    camPos *= 1.02;
-                    SetUpCamera();
+                    tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, -0.2f, -1.0f));
+                    tankMv = tankViewMatrix * tankModelMatrix;
+                    tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
+                    tankMn = tankMv.GetSubMatrix3();
+                    tankMn.Invert();
+                    tankMn.Transpose();
+
+                    waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, -0.2f, -1.0f));
+                    waterMv = waterViewMatrix * waterModelMatrix;
+                    waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+                    waterMn = waterMv.GetSubMatrix3();
+                    waterMn.Invert();
+                    waterMn.Transpose();
                 }
                 else 
                 {
@@ -381,10 +356,21 @@ void drag(int x, int y)
             }
             else
             {
-                if (ctrlDown)
+                if (glutGetModifiers() == GLUT_ACTIVE_CTRL)
                 {
-                    camPos *= 0.98;
-                    SetUpCamera();
+                    tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.2f, 1.0f));
+                    tankMv = tankViewMatrix * tankModelMatrix;
+                    tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
+                    tankMn = tankMv.GetSubMatrix3();
+                    tankMn.Invert();
+                    tankMn.Transpose();
+
+                    waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.2f, 1.0f));
+                    waterMv = waterViewMatrix * waterModelMatrix;
+                    waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+                    waterMn = waterMv.GetSubMatrix3();
+                    waterMn.Invert();
+                    waterMn.Transpose();
                 }
                 else 
                 {
@@ -444,7 +430,6 @@ void drag(int x, int y)
 
             waterRefModelMatrix *= waterRefModelMatrix.RotationZ(D2R(2.0f) * directionX);
             waterRefModelMatrix *= waterRefModelMatrix.RotationY(D2R(2.0f) * directionX);
-            sphereRefModelMatrix *= sphereModelMatrix.RotationY(D2R(2.0f) * directionX);
         }
         else if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
         {
@@ -485,19 +470,9 @@ void drag(int x, int y)
                 environmentMn.Transpose();
 
                 waterRefModelMatrix *= waterRefModelMatrix.RotationZ(D2R(2.0f) * directionX);
-                sphereRefModelMatrix *= sphereModelMatrix.RotationY(D2R(2.0f) * directionX);
             }
         }
     }
-
-    /*glUseProgram(sphereProg.GetID());
-    sphereProg["mvp"] = tankMvp;
-    sphereProg["mv"] = tankMv;
-    sphereProg["mn"] = tankMn;
-    //sphereProg["light"] = light;
-    sphereProg["lightMatrix"] = lightMatrix;
-    sphereProg["modelMatrix"] = sphereRefModelMatrix;
-    sphereProg["cameraPos"] = camPos;*/
     
     glUseProgram(tankProg.GetID());
     tankProg["mvp"] = tankMvp;
@@ -616,36 +591,10 @@ static cy::Vec3f Mat3Vec3Mul(cy::Matrix3f m, cy::Vec3f v) {
 
 static void LoadMeshes() 
 {
-    // Sphere
-    cy::TriMesh sphereMesh;
-    bool success = sphereMesh.LoadFromFileObj("./sphere.obj");
-    sphereMesh.ComputeBoundingBox();
-    sphereMesh.ComputeNormals();
-
-    unsigned int reserveAmount = sphereMesh.NF() * 3;
-    sphere.reserve(reserveAmount);
-    sphereTexCoord.reserve(reserveAmount);
-    sphereNormCoord.reserve(reserveAmount);
-
-    for (unsigned int i = 0; i < sphereMesh.NF(); i++) {
-        sphere.push_back(sphereMesh.V(sphereMesh.F(i).v[0]));
-        sphere.push_back(sphereMesh.V(sphereMesh.F(i).v[1]));
-        sphere.push_back(sphereMesh.V(sphereMesh.F(i).v[2]));
-    }
-    for (unsigned int i = 0; i < sphereMesh.NF(); i++) {
-        sphereTexCoord.push_back(cy::Vec2f(sphereMesh.VT(sphereMesh.FT(i).v[0])));
-        sphereTexCoord.push_back(cy::Vec2f(sphereMesh.VT(sphereMesh.FT(i).v[1])));
-        sphereTexCoord.push_back(cy::Vec2f(sphereMesh.VT(sphereMesh.FT(i).v[2])));
-    }
-    for (unsigned int i = 0; i < sphereMesh.NF(); i++) {
-        sphereNormCoord.push_back(sphereMesh.VN(sphereMesh.FN(i).v[0]));
-        sphereNormCoord.push_back(sphereMesh.VN(sphereMesh.FN(i).v[1]));
-        sphereNormCoord.push_back(sphereMesh.VN(sphereMesh.FN(i).v[2]));
-    }
-
+    
     // Tank
     cy::TriMesh tankMesh;
-    success = tankMesh.LoadFromFileObj("./container.obj");
+    bool success = tankMesh.LoadFromFileObj("./container.obj");
     tankMesh.ComputeBoundingBox();
     tankMesh.ComputeNormals();
     tank.reserve(tankMesh.NF());
@@ -705,11 +654,6 @@ static void LoadMeshes()
     waterPlaneTexCoord.push_back(cy::Vec2f(0.639760017 + 0.3, 0.692068994 + 0.3)); // top right
     waterPlaneTexCoord.push_back(cy::Vec2f(0.358830988 - 0.3, 0.692068994 + 0.3)); //top left
 
-    /*waterPlaneTexCoord.push_back(cy::Vec2f(0, 0));
-    waterPlaneTexCoord.push_back(cy::Vec2f(0,1));
-    waterPlaneTexCoord.push_back(cy::Vec2f(1,1));
-    waterPlaneTexCoord.push_back(cy::Vec2f(1,0));*/
-
 
     // Environment Mapping
     cy::TriMesh environmentMesh;
@@ -732,16 +676,6 @@ static void LoadMeshes()
             environmentVertCoords.push_back(environmentMesh.V(environmentMesh.F(i).v[j]));
         }
     }
-
-    /*glGenVertexArrays(1, &environmentVertexArrayObject);
-    glBindVertexArray(environmentVertexArrayObject);
-
-    glGenBuffers(1, &environmentBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, environmentBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cy::Vec3f) * environmentVertCoords.size(), &environmentVertCoords[0], GL_STATIC_DRAW);
-
-    environmentProg.SetAttribBuffer("pos", environmentBuffer, 3);*/
-
 
     for (int i = 0; i < 6; ++i)
     {
@@ -825,13 +759,6 @@ static void SetUpCamera()
     environmentMn.Invert();
     environmentMn.Transpose();
 
-    // Sphere
-    sphereMvp = tankMvp;
-    sphereMv = tankMv;
-    sphereMn = tankMn;
-    sphereModelMatrix = environmentModelMatrix;
-    sphereRefModelMatrix = sphereModelMatrix;
-
     // light matrix
     lightMatrix = cy::Matrix4f::View(light, cy::Vec3f(0.0f, 5.0f, 0.0f), cy::Vec3f(0.0f, 1.0f, 0.0f));
 
@@ -852,52 +779,6 @@ static void InitPrograms()
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, environmentBuffer);
     environmentProg.SetAttribBuffer("pos", environmentBuffer, 3);
-
-    // water sphere
-    /*sphereProg.BuildFiles("shaders/sphere_vert.txt", "shaders/sphere_frag.txt");
-    sphereProg.Bind();
-    sphereProg["mvp"] = sphereMvp;
-    sphereProg["mv"] = sphereMv;
-    sphereProg["mn"] = sphereMn;
-    sphereProg["light"] = light;
-    sphereProg["lightMatrix"] = lightMatrix;
-    sphereProg["modelMatrix"] = sphereRefModelMatrix;
-
-    glGenVertexArrays(1, &sphereVertexArrayObject);
-    glBindVertexArray(sphereVertexArrayObject);
-
-    glGenBuffers(1, &sphereFaceBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, sphereFaceBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-        sphere.size() * sizeof(cy::Vec3f),
-        &sphere[0],
-        GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, sphereFaceBuffer);
-
-    sphereProg.SetAttribBuffer("pos", sphereFaceBuffer, 3);
-
-    glGenBuffers(1, &sphereTexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, sphereTexBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-        sphereTexCoord.size() * sizeof(cy::Vec3f),
-        &sphereTexCoord[0],
-        GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, sphereTexBuffer);
-
-    sphereProg.SetAttribBuffer("txc", sphereTexBuffer, 2);
-
-    glGenBuffers(1, &sphereNormBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, sphereNormBuffer);
-    glBufferData(GL_ARRAY_BUFFER,
-        sphereNormCoord.size() * sizeof(cy::Vec3f),
-        &sphereNormCoord[0],
-        GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, sphereNormBuffer);
-
-    sphereProg.SetAttribBuffer("norm", sphereNormBuffer, 3);*/
 
     // water tank
     tankProg.BuildFiles("shaders/tank_vert.txt", "shaders/tank_frag.txt");
@@ -1001,12 +882,8 @@ static void LoadTextures()
     // tank textures
     glUseProgram(tankProg.GetID());
     glActiveTexture(GL_TEXTURE0);
-    tankTexName = "./tile.png";/*
-    tankNormalName = "./tile_normal.png";
-    tankDepthName = "./tile_depth.png";*/
+    tankTexName = "./tile.png";
     bool textureLoaded = lodepng::decode(tankTexture, tankTexWidth, tankTexHeight, tankTexName);
-   /* textureLoaded = lodepng::decode(tankNormalTex, tankNormalWidth, tankNormalHeight, tankNormalName);
-    textureLoaded = lodepng::decode(tankDepthTex, tankDepthWidth, tankDepthHeight, tankDepthName);*/
     glGenTextures(1, &tankTexID);
     glBindTexture(GL_TEXTURE_2D, tankTexID);
     glTexImage2D(
@@ -1026,46 +903,6 @@ static void LoadTextures()
     glUniform1i(sampler, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, tankTexID);
-
-    //glActiveTexture(GL_TEXTURE6);
-    //glGenTextures(1, &tankNormalMap);
-    //glBindTexture(GL_TEXTURE_2D, tankNormalMap);
-    //glTexImage2D(
-    //    GL_TEXTURE_2D,
-    //    0,
-    //    GL_RGBA,
-    //    tankNormalWidth,
-    //    tankNormalHeight,
-    //    0,
-    //    GL_RGBA,
-    //    GL_UNSIGNED_BYTE,
-    //    &tankNormalTex[0]
-    //);
-    //glGenerateMipmap(GL_TEXTURE_2D);
-    //sampler = glGetUniformLocation(tankProg.GetID(), "normalMap");
-    //glUniform1i(sampler, 6);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glBindTexture(GL_TEXTURE_2D, tankNormalMap);
-
-    //glActiveTexture(GL_TEXTURE5);
-    //glGenTextures(1, &tankDepthMap);
-    //glBindTexture(GL_TEXTURE_2D, tankDepthMap);
-    //glTexImage2D(
-    //    GL_TEXTURE_2D,
-    //    0,
-    //    GL_RGBA,
-    //    tankDepthWidth,
-    //    tankDepthHeight,
-    //    0,
-    //    GL_RGBA,
-    //    GL_UNSIGNED_BYTE,
-    //    &tankDepthTex[0]
-    //);
-    //glGenerateMipmap(GL_TEXTURE_2D);
-    //sampler = glGetUniformLocation(tankProg.GetID(), "depthMap");
-    //glUniform1i(sampler, 5);
-    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glBindTexture(GL_TEXTURE_2D, tankDepthMap);
 
     // water textures
     glUseProgram(waterProg.GetID());
@@ -1139,18 +976,6 @@ static void LoadTextures()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, waterDepthMap);
 
-    // sphere textures
-    /*glUseProgram(sphereProg.GetID());
-
-    waterSampler = glGetUniformLocation(sphereProg.GetID(), "waterTexID");
-    glUniform1i(waterSampler, 1);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, waterTexID);
-
-    waterSampler = glGetUniformLocation(sphereProg.GetID(), "depthMap");
-    glUniform1i(waterSampler, 3);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
-    glBindTexture(GL_TEXTURE_2D, waterDepthMap);
 }
 
 
@@ -1170,371 +995,4 @@ void initRenderBuffer()
     {
         printf("Problem initializing\n");
     }
-}
-
-static void SetUpWaterTank(float width, float length, float height, float thickness) {
-    // length along the X axis
-    // height along the Y axis
-    // width along the Z axis
-
-    // Outer walls:
-
-    float wCoordOuter = width / 2;
-    float lCoordOuter = length / 2;
-    float hCoordOuter = height;
-    float thicknessTexCoord = thickness / length;
-
-    // bottom - XZ-plane
-    // coord format: (+-length/2,0,+-width/2)
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // top left
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, -1.0f, 0.0)); // bottom left
-
-
-    // bottom texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(0.0f, width / length)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(1.0f, width / length)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // top right
-    tankTexCoord.push_back(cy::Vec2f(0.0f, 0.0f)); // top left
-    tankTexCoord.push_back(cy::Vec2f(0.0f, width / length)); // bottom left
-
-    // front - XY-plane
-    // coord format: (+-length/2,height or 0,width/2)
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // top left
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // bottom left 
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
-
-    // front texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(0.0f, 0.0f)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(0.0f, 0.0f)); // bottom left
-
-    // back - XY-plane
-    // coord format: (+-length/2,height or 0,-width/2)
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top left
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
-
-    // back texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(0.0f, 0.0f)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom left
-
-    // left - YZ-plane
-    // coord format: (-length/2,height or 0,+-width/2)
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // top left
-    tank.push_back(cy::Vec3f(-lCoordOuter, 0.0f, -wCoordOuter)); // bottom left 
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
-
-    // left texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(width / length, 0.0f)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(0.0f, 0.0f)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(width / length, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(width / length, 0.0f)); // bottom left
-
-    // right - YZ-plane
-    // coord format: (length/2,height or 0,+-width/2)
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, -wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // top right
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // top left
-    tank.push_back(cy::Vec3f(lCoordOuter, 0.0f, wCoordOuter)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
-
-    // right texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(1 - width / length, 0.0f)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(1 - width / length, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1 - width / length, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(1.0f, 0.0f)); // bottom left
-
-    // Inner walls:
-    float wCoordInner = width / 2 - thickness;
-    float lCoordInner = length / 2 - thickness;
-    float hCoordInner = height;
-
-    // bottom - XZ-plane
-    // coord format: (+-length/2,0,+-width/2)
-
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-
-    // bottom texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(-lCoordInner / length + 0.5, -wCoordInner / width + 0.5)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(lCoordInner / length + 0.5, -wCoordInner / width + 0.5)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(lCoordInner / length + 0.5, wCoordInner / width + 0.5)); // top right
-    tankTexCoord.push_back(cy::Vec2f(lCoordInner / length + 0.5, wCoordInner / width + 0.5)); // top right
-    tankTexCoord.push_back(cy::Vec2f(-lCoordInner / length + 0.5, wCoordInner / width + 0.5)); // top left
-    tankTexCoord.push_back(cy::Vec2f(-lCoordInner / length + 0.5, -wCoordInner / width + 0.5)); // bottom left
-
-    // front - XY-plane
-    // coord format: (+-length/2,height or thickness,width/2)
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // bottom left 
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, -1.0)); // bottom left
-
-    // front texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, thicknessTexCoord)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, thicknessTexCoord)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, thicknessTexCoord)); // bottom left
-
-    // back - XY-plane
-    // coord format: (+-length/2,height or thickness,-width/2)
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, -wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom left 
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 0.0f, 1.0)); // bottom left
-
-    // back texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, thicknessTexCoord)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, thicknessTexCoord)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, thicknessTexCoord)); // bottom left
-
-    // left - YZ-plane
-    // coord format: (-length/2,height or thickness,+-width/2)
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, wCoordInner)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordInner, -wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(-lCoordInner, thickness, -wCoordInner)); // bottom left 
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(1.0, 0.0f, 0.0)); // bottom left
-
-    // left texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(width / length - thicknessTexCoord, thicknessTexCoord)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, thicknessTexCoord)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(width / length - thicknessTexCoord, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(width / length - thicknessTexCoord, thicknessTexCoord)); // bottom left
-
-    // right - YZ-plane
-    // coord format: (length/2,height or thickness,+-width/2)
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, -wCoordInner)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordInner, wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(lCoordInner, thickness, wCoordInner)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(-1.0, 0.0f, 0.0)); // bottom left
-
-    // right texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, thicknessTexCoord)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(1 - width / length + thicknessTexCoord, thicknessTexCoord)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(1 - width / length + thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1 - width / length + thicknessTexCoord, height / length)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length)); // top left
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, thicknessTexCoord)); // bottom left
-
-    // Upper walls - XZ-plane
-    // Adjacent to front
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-
-    // front texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length + thicknessTexCoord)); // top left
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // bottom left
-
-    // Adjacent to right
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, wCoordOuter)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-
-    // texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(1.0f - width / length, height / length)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - width / length + thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - width / length + thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length + thicknessTexCoord)); // top left
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // bottom left
-
-    // adjacent to back
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(lCoordInner, hCoordOuter, -wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-
-    // texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(1.0f - thicknessTexCoord, height / length + thicknessTexCoord)); // top left
-    tankTexCoord.push_back(cy::Vec2f(1.0f, height / length)); // bottom left
-
-    // adjacent to left
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left 
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, wCoordOuter)); // bottom right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, wCoordInner)); // top right
-    tank.push_back(cy::Vec3f(-lCoordInner, hCoordOuter, -wCoordInner)); // top left
-    tank.push_back(cy::Vec3f(-lCoordOuter, hCoordOuter, -wCoordOuter)); // bottom left
-
-    //normal Coordinates
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top right
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // top left
-    tankNormCoord.push_back(cy::Vec3f(0.0, 1.0f, 0.0)); // bottom left
-
-    // texture coordinates
-    tankTexCoord.push_back(cy::Vec2f(width / length, height / length)); // bottom left
-    tankTexCoord.push_back(cy::Vec2f(0.0f, height / length)); // bottom right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(thicknessTexCoord, height / length + thicknessTexCoord)); // top right
-    tankTexCoord.push_back(cy::Vec2f(width / length - thicknessTexCoord, height / length + thicknessTexCoord)); // top left
-    tankTexCoord.push_back(cy::Vec2f(width / length, height / length)); // bottom left
 }

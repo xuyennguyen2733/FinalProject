@@ -70,15 +70,15 @@ void main()
     vec3 outNorm = leftNorm + u * (rightNorm - leftNorm);
 
     //tex+=(texCoordDisp*0.01);
-    tex += (sinTheta*waveScale);
+    //tex += (sinTheta);
 
     float displacement = texture(depthMap, tex).r;
-    if(displacement < 0.355)
+    if(displacement < 0.45)
     {
         displacement = -displacement;
     }
     displacement *= sinTheta;
-    pos.y += displacement*waveScale;
+    pos.y += displacement*2.0;
     gl_Position = pos;
     //gl_Position = interpolate(gl_in[0].gl_Position, gl_in[1].gl_Position,gl_in[2].gl_Position,gl_in[3].gl_Position);
 
