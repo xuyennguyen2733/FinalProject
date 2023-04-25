@@ -102,6 +102,27 @@ cy::Matrix4f environmentMv;
 cy::Matrix3f environmentMn;
 cy::Matrix4f lightMatrix;
 
+cy::Matrix4f inittankViewMatrix;
+cy::Matrix4f inittankProjMatrix;
+cy::Matrix4f inittankModelMatrix;
+cy::Matrix4f inittankMvp;
+cy::Matrix4f inittankMv;
+cy::Matrix3f inittankMn;
+cy::Matrix4f initwaterViewMatrix;
+cy::Matrix4f initwaterProjMatrix;
+cy::Matrix4f initwaterModelMatrix;
+cy::Matrix4f initwaterRefModelMatrix;
+cy::Matrix4f initwaterMvp;
+cy::Matrix4f initwaterMv;
+cy::Matrix3f initwaterMn;
+cy::Matrix4f initenvironmentViewMatrix;
+cy::Matrix4f initenvironmentProjMatrix;
+cy::Matrix4f initenvironmentModelMatrix;
+cy::Matrix4f initenvironmentMvp;
+cy::Matrix4f initenvironmentMv;
+cy::Matrix3f initenvironmentMn;
+
+
 // Buffers
 GLuint tankFaceBuffer;
 GLuint tankTexBuffer;
@@ -147,6 +168,7 @@ static void SetUpCamera();
 static void DrawTank();
 void DrawEnvironment();
 static void DrawWater();
+void resetPosition();
 static void InitPrograms();
 static void LoadTextures();
 static void LoadMeshes();
@@ -256,6 +278,10 @@ void keypress(unsigned char key, int x, int y) {
     case 27: //ESC
         glutLeaveMainLoop();
         break;
+    case 32: //space
+        resetPosition();
+
+        break;
     case 49:
         isTransparent = !isTransparent;
         break;
@@ -265,6 +291,67 @@ void keypress(unsigned char key, int x, int y) {
     }   
 
     glutPostRedisplay();
+}
+
+void resetPosition()
+{
+    limit = 0;
+    tankViewMatrix = inittankViewMatrix;
+    tankProjMatrix = inittankProjMatrix;
+    tankModelMatrix = inittankModelMatrix;
+    tankMvp = inittankMvp;
+    tankMv = inittankMv;
+    tankMn = inittankMn;
+    waterViewMatrix = initwaterViewMatrix;
+    waterProjMatrix = initwaterProjMatrix;
+    waterModelMatrix = initwaterModelMatrix;
+    waterRefModelMatrix = initwaterRefModelMatrix;
+    waterMvp = initwaterMvp;
+    waterMv = initwaterMv;
+    waterMn = initwaterMn;
+    environmentViewMatrix = initenvironmentViewMatrix;
+    environmentProjMatrix = initenvironmentProjMatrix;
+    environmentModelMatrix = initenvironmentModelMatrix;
+    environmentMvp = initenvironmentMvp;
+    environmentMv = initenvironmentMv;
+    environmentMn = initenvironmentMn;
+
+    glUseProgram(tankProg.GetID());
+    tankProg.Bind();
+    tankProg["mvp"] = inittankMvp;
+    tankProg["mv"] = inittankMv;
+    tankProg["mn"] = inittankMn;
+    //tankProg["light"] = light;
+    tankProg["lightMatrix"] = lightMatrix;
+
+    glUseProgram(waterProg.GetID());
+    waterProg.Bind();
+    waterProg["mvp"] = initwaterMvp;
+    waterProg["mv"] = initwaterMv;
+    waterProg["mn"] = initwaterMn;
+    waterProg["cameraPos"] = camPos;
+    waterProg["modelMatrix"] = initwaterRefModelMatrix;
+    waterProg["texCoordMvp"] = initwaterMvp;
+    //waterProg["light"] = light;
+    waterProg["lightMatrix"] = lightMatrix;
+
+    glUseProgram(environmentProg.GetID());
+    environmentProg.Bind();
+    environmentProg["mvp"] = initenvironmentMvp;
+    environmentProg["mv"] = initenvironmentMv;
+    environmentProg["mn"] = initenvironmentMn;
+
+    oldX = 0;
+    oldY = 0;
+    centerX = viewWidth / 2;
+    centerY = viewHeight / 2;
+    mouseButton = 0;
+    state = 0;
+    ctrlDown = false;
+    layers = 64.0f;
+    hasDispMap = true;
+    isReflective = true;
+    isTransparent = true;
 }
 
 void specialKeypress(int key, int x, int y) {
@@ -762,6 +849,27 @@ static void SetUpCamera()
     // light matrix
     lightMatrix = cy::Matrix4f::View(light, cy::Vec3f(0.0f, 5.0f, 0.0f), cy::Vec3f(0.0f, 1.0f, 0.0f));
     lightMatrix.SetRotationZ(D2R(10.0));
+
+    inittankViewMatrix = tankViewMatrix;
+    inittankProjMatrix = tankProjMatrix;
+    inittankModelMatrix = tankModelMatrix;
+    inittankMvp = tankMvp;
+    inittankMv = tankMv;
+    inittankMn = tankMn;
+    initwaterViewMatrix = waterViewMatrix;
+    initwaterProjMatrix = waterProjMatrix;
+    initwaterModelMatrix = waterModelMatrix;
+    initwaterRefModelMatrix = waterRefModelMatrix;
+    initwaterMvp = waterMvp;
+    initwaterMv = waterMv;
+    initwaterMn = waterMn;
+    initenvironmentViewMatrix = environmentViewMatrix;
+    initenvironmentProjMatrix = environmentProjMatrix;
+    initenvironmentModelMatrix = environmentModelMatrix;
+    initenvironmentMvp = environmentMvp;
+    initenvironmentMv = environmentMv;
+    initenvironmentMn = environmentMn;
+
 
 }
 
