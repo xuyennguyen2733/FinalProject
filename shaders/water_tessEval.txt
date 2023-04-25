@@ -70,7 +70,7 @@ void main()
     vec3 outNorm = leftNorm + u * (rightNorm - leftNorm);
 
     //tex+=(texCoordDisp*0.01);
-    //tex += (sinTheta);
+    tex += (sinTheta);
 
     float displacement = texture(depthMap, tex).r;
     if(displacement < 0.45)
