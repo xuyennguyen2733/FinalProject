@@ -42,10 +42,10 @@ void main()
 	vec3 plane_n = normalize(matrixNormal * norms);
 	//vec3 n = normalize(matrixNormal*((texture(normalMap, texCoord).xyz * 2.0f - 1.0f)));
 	vec3 n = normalize(matrixNormal * norms);
-	vec3 v = -normalize(vec3(view));
+	vec3 v = -normalize(vec3(vec4(view,0.0) * modelMatrix));
 	vec3 h = normalize(l+v);
 
-	vec3 refl = reflect(incident,plane_n);
+	vec3 refl = reflect(-v,plane_n);
 	vec3 refr = refract(incident,plane_n, ratio);
 
 	float theta = max(dot(l,n),0.0);
