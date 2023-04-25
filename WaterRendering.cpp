@@ -15,6 +15,7 @@
 
 float viewHeight = 540;
 float viewWidth = 960;
+int limit = 0;
 
 // Meshes
 std::vector<cy::Vec3f> sphere;
@@ -67,7 +68,7 @@ float texCoordDisp = 0.0f; // displacement of texture mapping
 float waveScale = 0.0f; // degrees at which the water changes
 
 // Camera
-cy::Vec3f camPos = cy::Vec3f(0.0f, 20.0f, 30.0f);
+cy::Vec3f camPos = cy::Vec3f(0.0f, 10.0f, 30.0f);
 cy::Vec3f camTar = cy::Vec3f(0.0f, 0.0f, 0.0f);
 
 // Light
@@ -200,10 +201,10 @@ void display()
         }
         waterProg["waveScale"] = scale;
 
-        glUseProgram(sphereProg.GetID());
+        /*glUseProgram(sphereProg.GetID());
         sphereProg["texCoordDisp"] = texCoordDisp;
         sphereProg["sinTheta"] = cos(theta);
-        sphereProg["waveScale"] = scale;
+        sphereProg["waveScale"] = scale;*/
 
     }
     if (timer > 2500)
@@ -235,8 +236,8 @@ void display()
         DrawTank();
         break;
     case sphereScene:
-        glEnable(GL_DEPTH_TEST);
-        DrawSphere();
+        //glEnable(GL_DEPTH_TEST);
+        //DrawSphere();
         break;
     }
     
@@ -348,20 +349,32 @@ void drag(int x, int y)
                     camPos *= 1.02;
                     SetUpCamera();
                 }
-                else {
-                    tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
-                    tankMv = tankViewMatrix * tankModelMatrix;
-                    tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
-                    tankMn = tankMv.GetSubMatrix3();
-                    tankMn.Invert();
-                    tankMn.Transpose();
+                else 
+                {
+                    if (limit > 0)
+                    {
+                        tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -0.6f));
+                        tankMv = tankViewMatrix * tankModelMatrix;
+                        tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
+                        tankMn = tankMv.GetSubMatrix3();
+                        tankMn.Invert();
+                        tankMn.Transpose();
 
-                    waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -1.0f));
-                    waterMv = waterViewMatrix * waterModelMatrix;
-                    waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
-                    waterMn = waterMv.GetSubMatrix3();
-                    waterMn.Invert();
-                    waterMn.Transpose();
+                        waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -0.6f));
+                        waterMv = waterViewMatrix * waterModelMatrix;
+                        waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+                        waterMn = waterMv.GetSubMatrix3();
+                        waterMn.Invert();
+                        waterMn.Transpose();
+
+                        environmentViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, -0.1f));
+                        environmentMv = environmentViewMatrix * environmentModelMatrix;
+                        environmentMvp = environmentProjMatrix * environmentViewMatrix * environmentModelMatrix;
+                        environmentMn = environmentMv.GetSubMatrix3();
+                        environmentMn.Invert();
+                        environmentMn.Transpose();
+                        limit--;
+                    }
 
                 }
 
@@ -375,20 +388,31 @@ void drag(int x, int y)
                 }
                 else 
                 {
-                    tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
-                    tankMv = tankViewMatrix * tankModelMatrix;
-                    tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
-                    tankMn = tankMv.GetSubMatrix3();
-                    tankMn.Invert();
-                    tankMn.Transpose();
+                    if (limit <= 100)
+                    {
+                        tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 0.6f));
+                        tankMv = tankViewMatrix * tankModelMatrix;
+                        tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
+                        tankMn = tankMv.GetSubMatrix3();
+                        tankMn.Invert();
+                        tankMn.Transpose();
 
-                    waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 1.0f));
-                    waterMv = waterViewMatrix * waterModelMatrix;
-                    waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
-                    waterMn = waterMv.GetSubMatrix3();
-                    waterMn.Invert();
-                    waterMn.Transpose();
+                        waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 0.6f));
+                        waterMv = waterViewMatrix * waterModelMatrix;
+                        waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
+                        waterMn = waterMv.GetSubMatrix3();
+                        waterMn.Invert();
+                        waterMn.Transpose();
 
+                        environmentViewMatrix.AddTranslation(cy::Vec3f(0.0f, 0.0f, 0.1f));
+                        environmentMv = environmentViewMatrix * environmentModelMatrix;
+                        environmentMvp = environmentProjMatrix * environmentViewMatrix * environmentModelMatrix;
+                        environmentMn = environmentMv.GetSubMatrix3();
+                        environmentMn.Invert();
+                        environmentMn.Transpose();
+                        limit++;
+
+                    }
                 }
             }
     }
@@ -419,6 +443,7 @@ void drag(int x, int y)
             environmentMn.Transpose();
 
             waterRefModelMatrix *= waterRefModelMatrix.RotationZ(D2R(2.0f) * directionX);
+            waterRefModelMatrix *= waterRefModelMatrix.RotationY(D2R(2.0f) * directionX);
             sphereRefModelMatrix *= sphereModelMatrix.RotationY(D2R(2.0f) * directionX);
         }
         else if (glutGetModifiers() == GLUT_ACTIVE_SHIFT)
@@ -436,7 +461,7 @@ void drag(int x, int y)
             else
             {
                 tankViewMatrix *= tankViewMatrix.RotationY(D2R(2.0f) * directionX);
-                tankViewMatrix *= Ry;
+                //tankViewMatrix *= Ry;
                 tankMv = tankViewMatrix * tankModelMatrix;
                 tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
                 tankMn = tankMv.GetSubMatrix3();
@@ -444,23 +469,35 @@ void drag(int x, int y)
                 tankMn.Transpose();
 
                 waterViewMatrix *= waterViewMatrix.RotationY(D2R(2.0f) * directionX);
-                waterViewMatrix *= Ry;
+                //waterViewMatrix *= Ry;
                 waterMv = waterViewMatrix * waterModelMatrix;
                 waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
                 waterMn = waterMv.GetSubMatrix3();
                 waterMn.Invert();
                 waterMn.Transpose();
+
+                environmentViewMatrix *= environmentViewMatrix.RotationY(D2R(2.0f) * directionX);
+                //waterViewMatrix *= Ry;
+                environmentMv = waterViewMatrix * environmentModelMatrix;
+                environmentMvp = environmentProjMatrix * environmentViewMatrix * environmentModelMatrix;
+                waterMn = environmentMv.GetSubMatrix3();
+                environmentMn.Invert();
+                environmentMn.Transpose();
+
+                waterRefModelMatrix *= waterRefModelMatrix.RotationZ(D2R(2.0f) * directionX);
+                sphereRefModelMatrix *= sphereModelMatrix.RotationY(D2R(2.0f) * directionX);
             }
         }
     }
 
-    glUseProgram(sphereProg.GetID());
+    /*glUseProgram(sphereProg.GetID());
     sphereProg["mvp"] = tankMvp;
     sphereProg["mv"] = tankMv;
     sphereProg["mn"] = tankMn;
     //sphereProg["light"] = light;
     sphereProg["lightMatrix"] = lightMatrix;
     sphereProg["modelMatrix"] = sphereRefModelMatrix;
+    sphereProg["cameraPos"] = camPos;*/
     
     glUseProgram(tankProg.GetID());
     tankProg["mvp"] = tankMvp;
@@ -511,7 +548,8 @@ void idle() {
     glutPostRedisplay();
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv) 
+{
     // Initializations
     glutInitContextVersion(4, 5);
     glutInit(&argc, argv);
@@ -752,19 +790,21 @@ static void SetUpCamera()
     tankViewMatrix = cy::Matrix4f::View(camPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
     tankProjMatrix = cy::Matrix4f::Perspective(D2R(60.0f), viewWidth / viewHeight, 0.1f, 1000.0f);
     tankModelMatrix = cy::Matrix4f::RotationZ(D2R(0.0f));
+    tankViewMatrix.AddTranslation(cy::Vec3f(0.0f, -50.0f, -200.0f));
+    tankModelMatrix.SetScale(2.0);
     tankMvp = tankProjMatrix * tankViewMatrix * tankModelMatrix;
     tankMv = tankViewMatrix * tankModelMatrix;
     tankMn = tankMv.GetSubMatrix3();
     tankMn.Invert();
     tankMn.Transpose();
-    sphereMvp = tankMvp;
-    sphereMv = tankMv;
-    sphereMn = tankMn;
+
 
     // water surface
     waterViewMatrix = cy::Matrix4f::View(camPos, camTar, cy::Vec3f(0.0f, 1.0f, 0.0f));
     waterProjMatrix = cy::Matrix4f::Perspective(D2R(60.0f), viewWidth / viewHeight, 0.1f, 1000.0f);
     waterModelMatrix = cy::Matrix4f::RotationZ(D2R(0.0f));
+    waterViewMatrix.AddTranslation(cy::Vec3f(0.0f, -50.0f, -200.0f));
+    waterModelMatrix.SetScale(2.0);
     waterMvp = waterProjMatrix * waterViewMatrix * waterModelMatrix;
     waterMv = waterViewMatrix * waterModelMatrix;
     waterMn = waterMv.GetSubMatrix3();
@@ -785,6 +825,10 @@ static void SetUpCamera()
     environmentMn.Invert();
     environmentMn.Transpose();
 
+    // Sphere
+    sphereMvp = tankMvp;
+    sphereMv = tankMv;
+    sphereMn = tankMn;
     sphereModelMatrix = environmentModelMatrix;
     sphereRefModelMatrix = sphereModelMatrix;
 
@@ -810,7 +854,7 @@ static void InitPrograms()
     environmentProg.SetAttribBuffer("pos", environmentBuffer, 3);
 
     // water sphere
-    sphereProg.BuildFiles("shaders/sphere_vert.txt", "shaders/sphere_frag.txt");
+    /*sphereProg.BuildFiles("shaders/sphere_vert.txt", "shaders/sphere_frag.txt");
     sphereProg.Bind();
     sphereProg["mvp"] = sphereMvp;
     sphereProg["mv"] = sphereMv;
@@ -853,7 +897,7 @@ static void InitPrograms()
     glEnableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, sphereNormBuffer);
 
-    sphereProg.SetAttribBuffer("norm", sphereNormBuffer, 3);
+    sphereProg.SetAttribBuffer("norm", sphereNormBuffer, 3);*/
 
     // water tank
     tankProg.BuildFiles("shaders/tank_vert.txt", "shaders/tank_frag.txt");
@@ -957,12 +1001,12 @@ static void LoadTextures()
     // tank textures
     glUseProgram(tankProg.GetID());
     glActiveTexture(GL_TEXTURE0);
-    tankTexName = "./tile.png";
+    tankTexName = "./tile.png";/*
     tankNormalName = "./tile_normal.png";
-    tankDepthName = "./tile_depth.png";
+    tankDepthName = "./tile_depth.png";*/
     bool textureLoaded = lodepng::decode(tankTexture, tankTexWidth, tankTexHeight, tankTexName);
-    textureLoaded = lodepng::decode(tankNormalTex, tankNormalWidth, tankNormalHeight, tankNormalName);
-    textureLoaded = lodepng::decode(tankDepthTex, tankDepthWidth, tankDepthHeight, tankDepthName);
+   /* textureLoaded = lodepng::decode(tankNormalTex, tankNormalWidth, tankNormalHeight, tankNormalName);
+    textureLoaded = lodepng::decode(tankDepthTex, tankDepthWidth, tankDepthHeight, tankDepthName);*/
     glGenTextures(1, &tankTexID);
     glBindTexture(GL_TEXTURE_2D, tankTexID);
     glTexImage2D(
@@ -983,45 +1027,45 @@ static void LoadTextures()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindTexture(GL_TEXTURE_2D, tankTexID);
 
-    glActiveTexture(GL_TEXTURE6);
-    glGenTextures(1, &tankNormalMap);
-    glBindTexture(GL_TEXTURE_2D, tankNormalMap);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA,
-        tankNormalWidth,
-        tankNormalHeight,
-        0,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        &tankNormalTex[0]
-    );
-    glGenerateMipmap(GL_TEXTURE_2D);
-    sampler = glGetUniformLocation(tankProg.GetID(), "normalMap");
-    glUniform1i(sampler, 6);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, tankNormalMap);
+    //glActiveTexture(GL_TEXTURE6);
+    //glGenTextures(1, &tankNormalMap);
+    //glBindTexture(GL_TEXTURE_2D, tankNormalMap);
+    //glTexImage2D(
+    //    GL_TEXTURE_2D,
+    //    0,
+    //    GL_RGBA,
+    //    tankNormalWidth,
+    //    tankNormalHeight,
+    //    0,
+    //    GL_RGBA,
+    //    GL_UNSIGNED_BYTE,
+    //    &tankNormalTex[0]
+    //);
+    //glGenerateMipmap(GL_TEXTURE_2D);
+    //sampler = glGetUniformLocation(tankProg.GetID(), "normalMap");
+    //glUniform1i(sampler, 6);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glBindTexture(GL_TEXTURE_2D, tankNormalMap);
 
-    glActiveTexture(GL_TEXTURE5);
-    glGenTextures(1, &tankDepthMap);
-    glBindTexture(GL_TEXTURE_2D, tankDepthMap);
-    glTexImage2D(
-        GL_TEXTURE_2D,
-        0,
-        GL_RGBA,
-        tankDepthWidth,
-        tankDepthHeight,
-        0,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        &tankDepthTex[0]
-    );
-    glGenerateMipmap(GL_TEXTURE_2D);
-    sampler = glGetUniformLocation(tankProg.GetID(), "depthMap");
-    glUniform1i(sampler, 5);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture(GL_TEXTURE_2D, tankDepthMap);
+    //glActiveTexture(GL_TEXTURE5);
+    //glGenTextures(1, &tankDepthMap);
+    //glBindTexture(GL_TEXTURE_2D, tankDepthMap);
+    //glTexImage2D(
+    //    GL_TEXTURE_2D,
+    //    0,
+    //    GL_RGBA,
+    //    tankDepthWidth,
+    //    tankDepthHeight,
+    //    0,
+    //    GL_RGBA,
+    //    GL_UNSIGNED_BYTE,
+    //    &tankDepthTex[0]
+    //);
+    //glGenerateMipmap(GL_TEXTURE_2D);
+    //sampler = glGetUniformLocation(tankProg.GetID(), "depthMap");
+    //glUniform1i(sampler, 5);
+    //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    //glBindTexture(GL_TEXTURE_2D, tankDepthMap);
 
     // water textures
     glUseProgram(waterProg.GetID());
@@ -1096,7 +1140,7 @@ static void LoadTextures()
     glBindTexture(GL_TEXTURE_2D, waterDepthMap);
 
     // sphere textures
-    glUseProgram(sphereProg.GetID());
+    /*glUseProgram(sphereProg.GetID());
 
     waterSampler = glGetUniformLocation(sphereProg.GetID(), "waterTexID");
     glUniform1i(waterSampler, 1);
@@ -1105,9 +1149,8 @@ static void LoadTextures()
 
     waterSampler = glGetUniformLocation(sphereProg.GetID(), "depthMap");
     glUniform1i(waterSampler, 3);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);*/
     glBindTexture(GL_TEXTURE_2D, waterDepthMap);
-
 }
 
 

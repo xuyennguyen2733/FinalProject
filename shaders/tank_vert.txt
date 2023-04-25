@@ -8,7 +8,7 @@ uniform mat4 mvp;
 uniform mat4 mv;
 uniform mat3 mn;
 uniform vec3 light;
-uniform sampler2D depthMap;
+//uniform sampler2D depthMap;
 
 out vec3 norms;
 out vec3 position;

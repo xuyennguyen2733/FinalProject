@@ -12,9 +12,10 @@ uniform float texCoordDisp;
 uniform float sinTheta;
 uniform float waveScale;
 uniform sampler2D depthMap;
+uniform mat4 modelMatrix;
 
 out vec3 norms;
-out vec4 position;
+out vec3 position;
 out vec2 texCoord;
 out vec3 lightDir;
 out mat3 matn;
@@ -35,7 +36,7 @@ void main()
 	//n *= displacement;
   //worldPos += vec4(n,0);
 	gl_Position = worldPos;
-	position = vec4(pos,1.0);
+	position = vec3(modelMatrix * vec4(pos,1.0));
 	texCoord = tex;
 	lightDir = light;
 	matn = mn;
